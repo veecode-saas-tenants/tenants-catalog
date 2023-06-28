@@ -1,0 +1,78 @@
+version: '3.8'
+services:
+  ${{ values.componentId }}:
+    container_name: ${{ values.componentId }} 
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${{ values.applicationPort }}:${{ values.applicationPort }}"
+{%- if values.database == 'postgresql' %}
+  postgres-compose:
+    image: postgres
+    environment:
+      - POSTGRES_USER=${{ values.dbUsername }}
+      - POSTGRES_PASSWORD=${{ values.dbPassword }}
+      - POSTGRES_DB=${{ values.database }}_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data 
+    networks:
+      - postgres-compose-network
+networks: 
+  postgres-compose-network:
+    driver: bridge
+{%- endif %}
+
+{%- if values.database == 'mysql' %}
+  mysql-compose:
+    image: mysql
+    environment:
+      MYSQL_DATABASE: ${{ values.database }}_db
+      MYSQL_USER: ${{ values.dbUsername }}
+      MYSQL_PASSWORD: ${{ values.dbPassword }}
+      MYSQL_ROOT_PASSWORD: ${{ values.dbPassword }}
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"
+    volumes:
+      - my-db:/var/lib/mysql
+volumes:
+  my-db:
+{%- endif %}
+
+{%- if values.database == 'mariadb' %}
+  mariadb-compose:
+    image: mariadb
+    environment:
+      MARIADB_DATABASE: ${{ values.database }}_db
+      MARIADB_USER: ${{ values.dbUsername }}
+      MARIADB_PASSWORD: ${{ values.dbPassword }}
+      MARIADB_ROOT_PASSWORD: ${{ values.dbPassword }}
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"
+    volumes:
+      - my-db:/var/lib/mariadb
+volumes:
+  my-db:
+{%- endif %}
+
+{%- if values.database == 'oracle' %}
+  oracle-db:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    environment:
+      - ORACLE_PDB=${{ values.database }}_db
+      - ORACLE_PWD=${{ values.dbPassword }}
+    ports:
+      - 1521:1521
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - oracle-backup:/opt/oracle/backup
+volumes:
+  oracle-data:
+  oracle-backup:
+# {%- endif %}

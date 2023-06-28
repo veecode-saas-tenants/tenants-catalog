@@ -1,0 +1,9 @@
+site_name: OpenApi Template
+site_description: Create an OpenApi template
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
+

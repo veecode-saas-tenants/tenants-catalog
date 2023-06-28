@@ -1,0 +1,9 @@
+site_name: Java Template
+site_description: Template using Java and Quarkus 
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
+

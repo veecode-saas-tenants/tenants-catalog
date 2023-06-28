@@ -1,0 +1,19 @@
+name: ${{ values.componentId }}
+build:
+  ${{ values.componentId }}:
+    image: okteto.dev/java-gradle-${{ values.componentId }}:1.0.0
+    dockerfile: Dockerfile.okteto
+    context: .
+deploy:
+  - kubectl apply -f okteto-k8s.yaml
+dev:
+  ${{ values.componentId }}:
+    image: veecode/okteto-runtime:java${{ values.javaVersion }}
+    command: bash
+    sync:
+      - .:/usr/src/app
+    forward:
+      - ${{ values.applicationPort }}:${{ values.applicationPort }}
+      - 5005:5005
+    volumes:
+      - /home/gradle/.gradle

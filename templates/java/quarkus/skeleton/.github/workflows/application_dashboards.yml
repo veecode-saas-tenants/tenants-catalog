@@ -1,0 +1,77 @@
+name: Deploying the application dashboards on Grafana address.
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  Adding_Dashboards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # Getting the UID from datasources
+      - name: Check grafana url
+        run: |
+          export GRAFANA_URL=${{ values.observability_grafana }}
+          echo "CHECKED_URL=${GRAFANA_URL%/}"
+          echo "CHECKED_URL=${GRAFANA_URL%/}" >> $GITHUB_ENV
+
+      - name: Getting uid from Jaeger datasource
+        run: |
+          export UID_TRACE_DASHBOARD=$(curl -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/datasources | jq '.[] | select(.type == "jaeger")'.uid)
+          echo "UID_TRACE = $UID_TRACE_DASHBOARD" 
+          echo "UID_TRACE=$UID_TRACE_DASHBOARD" >> $GITHUB_ENV
+
+      - name: Getting uid from Loki datasource
+        run: |
+          export UID_LOG_DASHBOARD=$(curl -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/datasources | jq '.[] | select(.type == "loki")'.uid)
+          echo "UID_LOG = $UID_LOG_DASHBOARD"
+          echo "UID_LOG=$UID_LOG_DASHBOARD" >> $GITHUB_ENV
+
+      - name: Getting uid from Prometheus datasource
+        run: |
+          export UID_METRICS_DASHBOARD=$(curl -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/datasources | jq '.[] | select(.type == "prometheus")'.uid)
+          echo "UID_METRICS = $UID_METRICS_DASHBOARD" 
+          echo "UID_METRICS=$UID_METRICS_DASHBOARD" >> $GITHUB_ENV
+
+      # Change UID from defaults dashboard
+      - name: Changing uid of dashboard from Jaeger
+        run: |
+          jq '(.dashboard.panels[].datasource | select(.type == "jaeger")).uid |= ${{'${{'}} env.UID_TRACE ${{'}}'}}' "dashboards/jaeger-trace.json" > ${{ values.componentId }}-jaeger-trace.json
+          cat ${{ values.componentId }}-jaeger-trace.json
+
+      - name: Changing uid of dashboard from Loki
+        run: |
+          jq '(.dashboard.panels[].datasource | select(.type == "loki")).uid |= ${{'${{'}} env.UID_LOG ${{'}}'}}' "dashboards/loki-logs.json" > ${{ values.componentId }}-loki-logs.json
+          cat ${{ values.componentId }}-loki-logs.json
+
+      - name: Changing uid of dashboard from Prometheus
+        run: |
+          jq '(.dashboard.panels[].datasource | select(.type == "prometheus")).uid |= ${{'${{'}} env.UID_METRICS ${{'}}'}}' "dashboards/kong-metrics.json" > ${{ values.componentId }}-kong-metrics.json
+          cat ${{ values.componentId }}-kong-metrics.json
+
+      #POST Dashboards on Grafana API
+      - name: Post Jaeger trace dashboard
+        run: |
+          curl -X POST -d @${{ values.componentId }}-jaeger-trace.json \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" \
+          --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/dashboards/db
+
+      - name: Post Kong metrics dashboard
+        run: |
+          curl -X POST -d @${{ values.componentId }}-kong-metrics.json \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" \
+          --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/dashboards/db
+
+      - name: Post Loki logs dashboard
+        run: |
+          curl -X POST -d @${{ values.componentId }}-loki-logs.json \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" \
+          --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/dashboards/db
