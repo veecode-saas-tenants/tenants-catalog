@@ -6,4 +6,4 @@ metadata:
 spec:
   targets:
     - ./api/*.yaml
-    - ./templates/*.yaml
+    - ./templates/platform-templates.yaml

@@ -8,3 +8,4 @@ spec:
     - ./devops/openapi-project/template.yaml
     - ./java/spring-boot-3/template.yaml
     - ./java/quarkus/template.yaml
+    - ./node/okteto-express-demo/template.yaml

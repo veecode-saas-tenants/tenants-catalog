@@ -1,0 +1,36 @@
+openapi: 3.0.0
+info:
+  title: ${{values.owner}}
+  description: This is an demo app for Okteto Journey
+  version: 1.0.0
+paths:
+  /:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: OK
+  /echo/{echo}:
+    get:
+      description: ""
+      parameters:
+        - name: echo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /{echo}:
+    get:
+      description: ""
+      parameters:
+        - name: echo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
