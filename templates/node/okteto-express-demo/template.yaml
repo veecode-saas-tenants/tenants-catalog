@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: okteto-express-demo
-  title: Developing Api using  Express.js
+  title: Express.js
   description: Create a rest api with Express.js and using Okteto as development environment.
   annotations:
     backstage.io/techdocs-ref: dir:.
@@ -26,7 +26,7 @@ spec:
         description:
           title: Description
           type: string
-          description: Help others understand what this website is for.
+          description: Help others understand what this app is for.
     
     - title: Choose a location
       required:
