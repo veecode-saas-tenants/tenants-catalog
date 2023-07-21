@@ -1,5 +1,5 @@
 services:
-  web:
+  ${{values.componentId}}:
     build: .
     command: yarn start
     volumes:
