@@ -2,7 +2,7 @@ name: Publish spec
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   publish-spec:
@@ -45,7 +45,7 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{'${{'}} secrets.API_TOKEN_GITHUB ${{'}}'}}
         with:
-          destination_branch: ${{ values.branchName }}
+          destination_branch: ${{ values.specPublishBranch }}
           source_file:  'api'
           destination_repo: ${{ values.specPublish }}
           destination_folder: '/'

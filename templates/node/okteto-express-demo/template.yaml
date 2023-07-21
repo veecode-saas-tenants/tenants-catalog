@@ -27,7 +27,28 @@ spec:
           title: Description
           type: string
           description: Help others understand what this app is for.
-    
+
+    - title: Spec Configuration
+      required:
+        - specPublish
+        - specPublishBranch
+      description: Spec House Configuration
+      properties:
+        specPublishBranch:
+          title: Branch name
+          type: string
+          description: Default branch of spechouse repository
+        specTags:
+          title: Tags
+          type: string
+          description: Inputs tags separated by comma(,)
+        specPublish:
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
     - title: Choose a location
       required:
         - repoUrl
@@ -63,6 +84,10 @@ spec:
           description: ${{ parameters.description }}
           repoUrl: ${{ (parameters.repoUrl | parseRepoUrl).owner }}/${{ (parameters.repoUrl | parseRepoUrl).repo }}
           owner: "veecode-platform"
+          specPublish: ${{ (parameters.specPublish | parseRepoUrl).owner }}/${{ (parameters.specPublish | parseRepoUrl).repo }}
+          specPublishRepo: ${{ (parameters.specPublish | parseRepoUrl).repo }}
+          specPublishBranch: ${{ parameters.specPublishBranch }}
+          specTags: ${{ parameters.specTags }}
 
     - id: publish
       name: Publish
@@ -72,6 +97,7 @@ spec:
         description: This is ${{ parameters.componentId }}
         repoUrl: ${{ parameters.repoUrl }}
         repoVisibility: ${{ parameters.visibility }}
+        defaultBranch: 'main'
 
     - id: register
       name: Register
