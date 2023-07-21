@@ -4,6 +4,5 @@ services:
     command: yarn start
     volumes:
       - .:/usr/app/
-      - /usr/app/node_modules
     ports:
       - "4000:4000"
