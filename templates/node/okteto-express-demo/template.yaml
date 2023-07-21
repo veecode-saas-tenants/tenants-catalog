@@ -37,6 +37,7 @@ spec:
         specPublishBranch:
           title: Branch name
           type: string
+          default: main
           description: Default branch of spechouse repository
         specTags:
           title: Tags
