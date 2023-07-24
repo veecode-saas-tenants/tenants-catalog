@@ -17,6 +17,7 @@ spec:
     - title: Provide some simple information
       required:
         - componentId
+        - oktetoNamespace
       properties:
         componentId:
           title: Name
@@ -27,6 +28,10 @@ spec:
           title: Description
           type: string
           description: Help others understand what this app is for.
+        oktetoNamespace:
+          title: Okteto Namespace
+          type: string
+          description: Input your desired okteto namespace.
 
     - title: Spec Configuration
       required:
@@ -87,6 +92,7 @@ spec:
           specPublishRepo: ${{ (parameters.specPublish | parseRepoUrl).repo }}
           specPublishBranch: ${{ parameters.specPublishBranch }}
           specTags: ${{ parameters.specTags }}
+          oktetoNamespace:  ${{ parameters.oktetoNamespace }}
 
     - id: publish
       name: Publish
