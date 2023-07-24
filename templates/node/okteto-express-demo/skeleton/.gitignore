@@ -22,3 +22,5 @@ benchmarks/graphs
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+bin/openapi-swagger.json

@@ -1,7 +1,7 @@
 services:
   ${{values.componentId}}:
     build: .
-    command: yarn start
+    command: npm run start
     volumes:
       - .:/usr/app/
     ports:

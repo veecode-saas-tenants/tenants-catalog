@@ -1,0 +1,8 @@
+site_name: Express Template
+site_description: Template for rest api application
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
