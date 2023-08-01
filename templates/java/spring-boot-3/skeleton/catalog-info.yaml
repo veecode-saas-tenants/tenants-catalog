@@ -7,13 +7,12 @@ metadata:
   {%- endif %}
   annotations:
     backstage.io/techdocs-ref: dir:.
-    backstage.io/kubernetes-id: ${{values.componentId | dump}}
-    github.com/project-slug: ${{values.repoUrl}}
-    vault.io/secrets-path: ${{values.componentId | dump}}
-    grafana/tag-selector: ${{values.componentId | dump}}
-    grafana/alert-label-selector: "alertname=${{values.componentId}}"
-    argocd/proxy-url: '/argocd/api'
-    argocd/app-name: ${{values.componentId | dump}}
+    # github.com/project-slug: ${{values.repoUrl}}
+    # vault.io/secrets-path: ${{values.componentId | dump}}
+    # grafana/tag-selector: ${{values.componentId | dump}}
+    # grafana/alert-label-selector: "alertname=${{values.componentId}}"
+    # argocd/proxy-url: '/argocd/api'
+    # argocd/app-name: ${{values.componentId | dump}}
 spec:
   type: service
   lifecycle: experimental
