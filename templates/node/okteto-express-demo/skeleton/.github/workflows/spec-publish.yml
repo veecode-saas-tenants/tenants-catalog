@@ -3,7 +3,8 @@ name: Publish spec
 on:
   push:
     branches: [ main ]
-
+    paths: 
+      - 'openapi-swagger.yaml'
 jobs:
   publish-spec:
     runs-on: ubuntu-latest
