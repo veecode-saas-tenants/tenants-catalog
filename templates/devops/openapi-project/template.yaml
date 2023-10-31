@@ -1,0 +1,116 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: openapi-project-template-github
+  title: OpenApi Template
+  description: Create an OpenApi template
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - recommended
+    - platform-templates
+spec:
+  owner: veecode/platform
+  type: microservice
+  parameters:
+    - title: Spec House Configuration
+      required:
+        - branchName
+      description: Spec House Configuration
+      properties:
+        branchName:
+          title: Branch name
+          type: string
+          description: Name of the branch
+        specTags:
+          title: Tags
+          type: string
+          description: Inputs tags separated by comma(,)
+        specPublish:
+          type: string
+          ui:field: RepoUrlPlatform
+          ui:options:
+            allowedHosts:
+              - github.com
+
+    - title: Choose a location
+      required:
+        - repoUrl
+        - owner
+      properties:
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group      
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPlatform
+          ui:options:
+            allowedHosts:
+              - github.com
+        visibility:
+          title: Repository visibility
+          type: string
+          enum:
+            - public
+            - private
+          enumNames:
+            - 'Public'
+            - 'Private'
+          default: private 
+
+    - title: Mock Server Configuration
+      properties:
+        mockserverUrl:
+          title: Mockserver URL
+          type: string
+          description: 'Insert your mockerser host. ex.: https://mockserver.apr.vee.codes'
+          default: ''
+          
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        # copyWithoutRender:
+        # - .github/workflows/*
+        values:
+          componentId: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
+          description: ${{ (parameters.repoUrl | parseRepoUrl).repo }}
+          owner: ${{ parameters.owner }}
+          argoRepoUrl: ${{ (parameters.argoRepoUrl | parseRepoUrl).owner }}/${{ (parameters.argoRepoUrl | parseRepoUrl).repo }}
+          repoUrl: ${{ (parameters.repoUrl | parseRepoUrl).owner }}/${{ (parameters.repoUrl | parseRepoUrl).repo }}
+          specPublish: ${{ (parameters.specPublish | parseRepoUrl).owner }}/${{ (parameters.specPublish | parseRepoUrl).repo }}
+          branchName: ${{ parameters.branchName }}
+          specTags: ${{ parameters.specTags }}
+          mockserverUrl: ${{ parameters.mockserverUrl }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts:
+          - github.com
+        description: This is ${{ parameters.componentId }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}
+        
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

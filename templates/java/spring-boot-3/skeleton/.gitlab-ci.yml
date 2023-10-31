@@ -1,0 +1,257 @@
+image: ubuntu:latest
+
+stages:
+  - build_project
+  - create_K8s_artifacts
+{%- if values.exportKongKubernetes %} 
+  - export_kong
+{%- endif %}
+  - publish_k8s
+  - publish_spec
+{%- if values.observability_window == "custom" %}
+  - publish_dashboard_grafana
+{%- endif %}
+
+variables:
+  API_TOKEN_GITLAB: $API_TOKEN_GITLAB
+  PROJECT_NAME: ${{ values.componentId }}
+  DOCKER_REGISTRY: registry.hub.docker.com
+  DOCKER_NAMESPACE: ${{ values.docker_organization }}
+  DOCKER_DRIVER: overlay2
+  SPRING_PROFILES_ACTIVE: gitlab-ci
+  DOCKER_HOST: tcp://docker:2375 
+  DOCKER_TLS_CERTDIR: ""
+  CONTAINER_IMAGE: {% if values.docker_window == 'custom' %}${{ values.docker_generic }}/$DOCKER_NAMESPACE/$PROJECT_NAME{% else %}docker.io/$DOCKER_NAMESPACE/$PROJECT_NAME{% endif %}
+    
+build_project:
+  stage: build_project
+  image: docker:latest
+  services:
+    - name: docker:dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["dockerd-entrypoint.sh"]
+  before_script:
+    - apk add openjdk${{ values.javaVersion }} wget unzip curl
+    - java -version
+  script:
+    - ./gradlew --version
+    - ./gradlew bootBuildImage --imageName=$CONTAINER_IMAGE:latest --publishImage --builder paketobuildpacks/builder:base 
+  artifacts:
+    paths:
+      - build/libs/*.jar
+
+
+create_K8s_artifacts:
+  stage: create_K8s_artifacts
+  before_script:
+    - apt-get update && apt-get install -y curl jq wget
+    - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    - chmod +x kubectl
+    - mv kubectl /usr/local/bin/
+    - kubectl version --client
+    - mkdir -p ./k8s
+    - mkdir -p ./config/
+    - touch config/${{values.componentId}}.yaml
+    - wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+    - chmod a+x /usr/local/bin/yq
+    - yq --version
+  script:
+    - |
+        kubectl create deployment $PROJECT_NAME --namespace=vkpr --port=${{ values.applicationPort }} --replicas=1 \
+        --image=$CONTAINER_IMAGE:latest --dry-run=client -o=yaml > ./k8s/deployment.yaml
+    - yq e '''
+      .metadata.labels."backstage.io/kubernetes-id"="$PROJECT_NAME" |
+      .spec.template.metadata.labels."backstage.io/kubernetes-id"="$PROJECT_NAME" |
+      .spec.template.spec.containers[0].imagePullPolicy="IfNotPresent" |
+      .spec.template.spec.containers[0].resources.requests.memory="256Mi" |
+      .spec.template.spec.containers[0].resources.limits.memory="512Mi" |
+      .spec.template.metadata.annotations."sidecar.opentelemetry.io/inject"="true" |
+      .spec.template.metadata.annotations."instrumentation.opentelemetry.io/inject-java"="true" |
+      del(.status) | del(.metadata.creationTimestamp) | del(.spec.template.metadata.creationTimestamp) | del(.spec.strategy)
+      ''' -i ./k8s/deployment.yaml
+    - kubectl create service clusterip $PROJECT_NAME-service-0 --namespace=vkpr --tcp=${{ values.applicationPort }}:${{ values.applicationPort }} --dry-run=client -o=yaml > ./k8s/service.yaml
+    - yq e '''
+      .metadata.annotations."sidecar.opentelemetry.io/inject"="true" |
+      .metadata.annotations."instrumentation.opentelemetry.io/inject-java"="true" |
+      del(.metadata.creationTimestamp) | del(.status) |
+      .metadata.labels."backstage.io/kubernetes-id"="$PROJECT_NAME"''' -i ./k8s/service.yaml
+    - yq e '.spec.selector.app="$PROJECT_NAME"' -i ./k8s/service.yaml
+    - |
+        kubectl create ingress $PROJECT_NAME --class=kong --namespace=vkpr \
+          --annotation "cert-manager.io/cluster-issuer"="certmanager-issuer" \
+          --annotation "konghq.com/https-redirect-status-code"="308" \
+          --annotation "kubernetes.io/tls-acme"="true" \
+          --annotation "konghq.com/strip-path"="true" \
+          --annotation "konghq.com/preserve-host"="true" \
+          --annotation "konghq.com/protocols"="https" \
+          --annotation "sidecar.opentelemetry.io/inject"="true" \
+          --annotation "instrumentation.opentelemetry.io/inject-java"="true" \
+          --rule="rest.apr.vee.codes/$PROJECT_NAME*=$PROJECT_NAME-service-0:${{ values.applicationPort }},tls=rest.apr.vee.codes-tls" --dry-run=client -o=yaml > ./k8s/ingress.yaml
+    - yq e '''
+        .apiVersion="argoproj.io/v1alpha1" |
+        .kind="Application" |
+        .metadata.name="${{values.componentId}}" |
+        .metadata.namespace="argocd" |
+        .spec.project="default" |
+        .spec.source.repoURL="https://github.com/${{ values.argoRepoUrl }}.git" |
+        .spec.source.targetRevision="HEAD" |
+        .spec.source.path="${{values.componentId}}/" |
+        .spec.syncPolicy.automated.prune=true |
+        .spec.destination.server="https://kubernetes.default.svc" |
+        .spec.destination.namespace="vkpr"''' -i config/${{values.componentId}}.yaml          
+
+
+{%- if values.exportKongKubernetes %}    
+export_kong_kubernetes:
+  stage: export_kong
+  before_script:
+    - apt-get update && apt-get -y install wget jq xz-utils curl
+    - wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+    - chmod a+x /usr/local/bin/yq
+    - yq --version
+    - curl -SfL https://github.com/Kong/insomnia/releases/download/lib@3.14.0/inso-linux-3.14.0.tar.xz -o inso.tar.xz
+    - tar -xvf inso.tar.xz -C /usr/local/bin/ inso
+  script:
+    - test -f .insomnia/ApiSpec/spc_*.yml && export WORKSPACE_EXISTS=true || export WORKSPACE_EXISTS=false
+    - curl -sSfL https://github.com/Kong/setup-inso/releases/download/v1/setup-inso_1.1.0_linux_amd64.tar.gz | tar -xz -C /usr/local/bin;
+    - inso export spec "$(cat .insomnia/ApiSpec/spc_*.yml | yq '.fileName')"  --output ./openapi-swagger.yaml;
+    - inso generate config "$(cat .insomnia/ApiSpec/spc_*.yml | yq '.fileName')" --type kubernetes --output ./k8s/kong-kubernetes.yaml;
+{%- endif %}
+
+
+publish_k8s:
+  stage: publish_k8s
+  variables:
+    CI_REGISTRY_USER: $CI_REGISTRY_USER
+    CI_REGISTRY_PASSWORD: $API_TOKEN_GITLAB
+  before_script:
+    - apt-get update && apt-get install -y apt-transport-https gnupg2 curl git
+    - curl -sL https://github.com/mikefarah/yq/releases/download/v4.12.1/yq_linux_amd64 -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+    - yq --version
+    - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+    - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+    - apt-get update && apt-get install -y kubectl
+  script:
+#    - mkdir k8s/
+#    - kubectl create deployment $PROJECT_NAME --namespace=vkpr --port=${{ values.applicationPort }} --replicas=1 --image=$CONTAINER_IMAGE:latest --dry-run=client -o=yaml > ./k8s/deployment.yaml
+#    - yq e '.metadata.labels."backstage.io/kubernetes-id"="$PROJECT_NAME" | .spec.template.metadata.labels."backstage.io/kubernetes-id"="$PROJECT_NAME" | .spec.template.spec.containers[0].imagePullPolicy="IfNotPresent" | .spec.template.spec.containers[0].resources.requests.memory="256Mi" | .spec.template.spec.containers[0].resources.limits.memory="512Mi" | del(.status) | del(.metadata.creationTimestamp) | del(.spec.template.metadata.creationTimestamp) | del(.spec.strategy)' -i ./k8s/deployment.yaml
+#    - kubectl create service clusterip $PROJECT_NAME --namespace=vkpr --tcp=${{ values.applicationPort }}:${{ values.applicationPort }} --dry-run=client -o=yaml > ./k8s/service.yaml
+#    - yq e 'del(.metadata.creationTimestamp) | del(.status) | .metadata.labels."backstage.io/kubernetes-id"="$PROJECT_NAME"' -i ./k8s/service.yaml
+#    - kubectl create ingress $PROJECT_NAME --class=kong --namespace=vkpr --annotation "cert-manager.io/cluster-issuer"="certmanager-issuer" --annotation "konghq.com/https-redirect-status-code"="308" --annotation "kubernetes.io/tls-acme"="true" --annotation "konghq.com/strip-path"="true" --annotation "konghq.com/preserve-host"="true" --annotation "konghq.com/protocols"="https" --rule="rest.apr.vee.codes/$PROJECT_NAME*=$PROJECT_NAME:${{ values.applicationPort }},tls=rest.apr.vee.codes-tls" --dry-run=client -o=yaml > ./k8s/ingress.yaml
+#    - yq e 'del(.metadata.creationTimestamp) | del(.status)' -i ./k8s/ingress.yaml
+#    - yq e '.metadata.labels."backstage.io/kubernetes-id"="$PROJECT_NAME"' -i ./k8s/ingress.yaml
+    - git clone -b ${{ values.argoRepoBranch }} https://oauth2:$API_TOKEN_GITLAB@gitlab.com/${{ values.argoRepoUrl }}.git
+    - cp -r k8s ${{ values.argoRepo }}/$PROJECT_NAME
+    - cp -r config/* ${{ values.argoRepo }}/config
+    - cd ${{ values.argoRepo }}
+    - git config --global user.email "$GITLAB_USER_EMAIL"
+    - git config --global user.name "$CI_REGISTRY_USER"
+    - git add .
+    - git commit -m "Add Kubernetes files" --allow-empty
+    - git push origin ${{ values.argoRepoBranch }}
+    
+publish-spec:
+  stage: publish_spec
+  variables:
+    MOCK_SERVER: "${{ values.mockserverUrl }}" 
+    NAME: ""
+    TAGS: "${{values.specTags}}"
+  before_script:
+    - apt-get update && apt-get -y install wget python3.9 jq git curl xz-utils
+    - wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+    - chmod a+x /usr/local/bin/yq
+    - yq --version
+    - curl -SfL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    - python3 get-pip.py --user
+    - export PATH="$HOME/.local/bin:$PATH"
+    - pip3 --version
+    - pip3 install pyyaml
+  script:
+    - test -f .insomnia/ApiSpec/spc_*.yml && export WORKSPACE_EXISTS=true || export WORKSPACE_EXISTS=false
+    - |
+        if [ $WORKSPACE_EXISTS = true ]; then
+        apt-get -y install jq;
+        curl -SfL https://github.com/Kong/insomnia/releases/download/lib@3.14.0/inso-linux-3.14.0.tar.xz -o inso.tar.xz
+        tar -xvf inso.tar.xz -C /usr/local/bin/ inso
+        inso export spec "$(cat .insomnia/ApiSpec/spc_*.yml | yq '.fileName')"  --output ./openapi-swagger.yaml;
+        fi
+    - |
+            if [ $WORKSPACE_EXISTS = true ] && [ -n "$MOCK_SERVER" ]; then
+            NAME=$(echo $CI_PROJECT_PATH | cut -d '/' -f2);
+            touch MOCK.yaml
+            yq 'with(.paths; with_entries(.key |=strenv(NAME) + .))' ./openapi-swagger.yaml >> MOCK.yaml
+            cat MOCK.yaml | python3 -c 'import sys, yaml, json; print(json.dumps(yaml.safe_load(sys.stdin.read()), indent=2, sort_keys=False))' > MOCK.json
+            curl --max-time 30 -v -X PUT "${MOCK_SERVER%/}/mockserver/openapi${API_KEY:+?apikey=$API_KEY}" -d "{\"specUrlOrPayload\": $(cat $PWD/MOCK.json)}" || true;
+            echo "Adding mockserver address to spec";
+            yq ".servers += [{\"url\": \"$MOCK_SERVER $([[ ! "$MOCK_SERVER" == */ ]] && echo "/")${NAME}\"}]" -i ./openapi-swagger.yaml
+            fi
+    - echo "Spechouse Publish"
+    - mkdir -p api/
+    - export NAME=$(echo $CI_PROJECT_PATH | awk -F / '{print $2}')
+    - echo $NAME
+    - touch "api/$NAME.yaml"
+    - sed --in-place "s|\"|'|g" ./openapi-swagger.yaml
+    - yq eval ".apiVersion = \"backstage.io/v1alpha1\"" -i "api/$NAME.yaml"
+    - yq eval ".kind = \"API\" " -i "api/$NAME.yaml"
+    - yq eval ".metadata.name=\"$NAME\"" -i "api/$NAME.yaml"
+    - yq eval ".metadata.title=\"$NAME\"" -i "api/$NAME.yaml"
+    - yq eval ".metadata.publishedAt=\"$(date '+%Y-%m-%d %T')\"" -i "api/$NAME.yaml"
+    - yq eval ".metadata.description= \"$(cat ./openapi-swagger.yaml | yq e '.info.description')\"" -i "api/$NAME.yaml"
+    - yq eval ".metadata.tags = (\"$TAGS\" | split(\",\") | map(sub(\" +\", \"\")))" -i "api/$NAME.yaml"
+    - yq eval ".spec.type = \"openapi\"" -i "api/$NAME.yaml"
+    - yq eval ".spec.lifecycle = \"production\"" -i "api/$NAME.yaml"
+    - yq eval ".spec.owner = \"consumer\"" -i "api/$NAME.yaml"
+    - yq eval ".spec.definition = \"$(yq -I4 e '.')\"" -i "api/$NAME.yaml"
+    - git config --global user.name "$CI_REGISTRY_USER"
+    - git config --global user.email "$GITLAB_USER_EMAIL"
+    - git clone -b ${{ values.specPublishBranch }} https://oauth2:$API_TOKEN_GITLAB@gitlab.com/${{ values.specPublish }}.git 
+    - cp -f ./api/$NAME.yaml ./${{ values.specPublishRepo }}/api
+    - cd ${{ values.specPublishRepo }}
+    - git add .
+    - git commit -m "Pipeline commit" --allow-empty
+    - git push  origin ${{ values.specPublishBranch }}
+    
+
+{%- if values.observability_window == "custom" %}
+publish_dashboard_grafana:
+  stage: publish_dashboard_grafana
+  variables:
+    GRAFANA_URL: "${{ values.observability_grafana }}"
+    UID_TRACE_DASHBOARD: ""
+    UID_LOG_DASHBOARD: ""
+    UID_METRICS_DASHBOARD: ""
+  before_script:
+    - apt-get update -qy
+    - apt-get install -y curl jq
+  script:
+      - |
+          export GRAFANA_API_TOKEN=$GRAFANA_API_TOKEN
+          export CHECKED_URL=${GRAFANA_URL%/}
+          export UID_TRACE_DASHBOARD=$(curl -H "Authorization: Bearer $GRAFANA_API_TOKEN" --url $CHECKED_URL/api/datasources | jq '.[] | select(.type == "jaeger")'.uid)
+          echo "UID_TRACE = $UID_TRACE_DASHBOARD"
+          export UID_LOG_DASHBOARD=$(curl -H "Authorization: Bearer $GRAFANA_API_TOKEN" --url $CHECKED_URL/api/datasources | jq '.[] | select(.type == "loki")'.uid)
+          echo "UID_LOG = $UID_LOG_DASHBOARD"
+          export UID_METRICS_DASHBOARD=$(curl -H "Authorization: Bearer $GRAFANA_API_TOKEN" --url $CHECKED_URL/api/datasources | jq '.[] | select(.type == "prometheus")'.uid)
+          echo "UID_METRICS = $UID_METRICS_DASHBOARD"
+          jq '(.dashboard.panels[].datasource | select(.type == "jaeger")).uid |= env.UID_TRACE_DASHBOARD' "dashboards/jaeger-trace.json" > $PROJECT_NAME-jaeger-trace.json
+          cat $PROJECT_NAME-jaeger-trace.json
+          jq '(.dashboard.panels[].datasource | select(.type == "loki")).uid |= env.UID_LOG_DASHBOARD' "dashboards/loki-logs.json" > $PROJECT_NAME-loki-logs.json
+          cat $PROJECT_NAME-loki-logs.json
+          jq '(.dashboard.panels[].datasource | select(.type == "prometheus")).uid |= env.UID_METRICS_DASHBOARD' "dashboards/kong-metrics.json" > $PROJECT_NAME-kong-metrics.json
+          cat $PROJECT_NAME-kong-metrics.json
+          curl -X POST -d @$PROJECT_NAME-jaeger-trace.json \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $GRAFANA_API_TOKEN" \
+          --url $CHECKED_URL/api/dashboards/db
+          curl -X POST -d @$PROJECT_NAME-kong-metrics.json \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $GRAFANA_API_TOKEN" \
+          --url $CHECKED_URL/api/dashboards/db
+          curl -X POST -d @$PROJECT_NAME-loki-logs.json \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $GRAFANA_API_TOKEN" \
+          --url $CHECKED_URL/api/dashboards/db
+{%- endif %}

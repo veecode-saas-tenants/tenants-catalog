@@ -1,0 +1,11 @@
+_id: env_${{values.componentId}}
+type: Environment
+parentId: wrk_${{values.componentId}}
+modified: 1674571802204
+created: 1674571802204
+name: Base Environment
+data: {}
+dataPropertyOrder: null
+color: null
+isPrivate: false
+metaSortKey: 1674571802204

@@ -1,0 +1,58 @@
+openapi: 3.0.1
+info:
+  title: ${{ values.componentId }}
+  description: ${{ values.description }}
+  version: 1.0.0
+servers:
+  - url: https://${{ values.componentId }}-${{ values.oktetoNamespace }}.cloud.okteto.net
+    description: Okteto dev environment
+  - url: http://localhost:4000
+    description: Localhost environment
+paths:
+  /:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: echo example
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+  /echo/{echo}:
+    get:
+      description: ""
+      parameters:
+        - name: echo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: echo example
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EchoResponse'
+components:
+  schemas:
+    EchoResponse:
+      type: object
+      properties:
+        response:
+          type: string
+          example: your echo ${echo}
+      xml:
+        name: EchoResponse
+    DefaultResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: express app is running
+        date-time:
+          type: string
+          example: "2023-07-21T20:54:09.379Z"
+      xml:
+        name: DefaultResponse

@@ -1,0 +1,418 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: quarkus-template-github
+  title: Quarkus Template
+  description: Create a quarkus microservice
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - recommended
+    - platform-templates
+    - java
+spec:
+  owner: veecode/platform
+  type: microservice
+  parameters:
+    - title: Project Configuration
+      required:
+        - componentId
+        - owner
+      properties:
+        componentId:
+          title: Project name
+          type: string
+          description: Name of the project
+          pattern: '^([a-z0-9]|[.]|[_]|[-])*$'
+          ui:autofocus: true
+          ui:field: EntityNamePicker
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this application is for.
+          ui:options: rows:5
+        artifact:
+          title: Artifact
+          type: string
+          description: Java Artifact
+          default: "demo"
+        javaVersion:
+          title: Java version
+          type: string
+          description: Specifies the java version
+          default: "17"
+          enum:
+            - "11"
+            - "17"
+          enumNames:
+            - "11"
+            - "17"
+        applicationPort:
+          title: Application Port
+          type: string
+          description: Name of the project
+          default: "8080"
+
+    - title: Database Configuration
+      properties:
+        database_window:
+          title: Select a database
+          type: object
+          properties:
+            database_window_mode:
+              title: "Select a database of your choice"  
+              type: string
+              enum:
+              - default
+              - custom
+              enumNames:
+              - 'None'
+              - 'Choose a database'
+              default: default
+          dependencies:
+            database_window_mode:
+                oneOf:
+                - properties:
+                   database_window_mode:
+                     enum:
+                        - default          
+                - properties:
+                    database_window_mode:
+                      enum:
+                        - custom
+                    database:
+                      title: Select a database
+                      type: string
+                      enum: 
+                        - 'postgresql'
+                        - 'mysql'
+                        - 'mariadb'
+                        - 'oracle'
+                    dbUsername:
+                      title: Username
+                      type: string
+                      description: Specifies the database username
+                    dbPassword:
+                      title: Password
+                      type: string
+                      description: Specifies the database password
+                      ui:widget: password
+
+    - title: Docker Registry
+      properties:
+        docker_window:
+          title: Select a docker host
+          type: object
+          properties:
+            docker_window_mode:
+              title: "Select a host of your choice"  
+              type: string
+              enum:
+              - default
+              - custom
+              enumNames:
+              - 'Docker Hub'
+              - 'Generic'
+              default: default
+            docker_organization:
+              title: "Enter your organization"
+              type: string
+          dependencies:
+            docker_window_mode:
+                oneOf:
+                - properties:
+                   docker_window_mode:
+                     enum:
+                        - default          
+                - properties:
+                    docker_window_mode:
+                      enum:
+                        - custom
+                    docker_generic:
+                      title: Insert a Generic host
+                      type: string
+
+    - title: CI/CD Configurations
+      required:
+        - argoRepoUrl
+        - argoRepoBranch
+      description: ArgoCD repository configuration
+      properties:
+        argoRepoBranch:
+          title: Branch name
+          type: string
+          description: Default branch of argo repository
+        argoRepoUrl:
+          type: string
+          ui:field: RepoUrlPlatform
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+              - bitbucket.org
+        exportKongKubernetes:
+          title: Export Kong for Kubernetes
+          type: boolean
+          default: false
+        mockserverUrl:
+          title: Mockserver URL
+          type: string
+          description: 'Insert your mockerser host. ex.: https://mockserver.apr.vee.codes'
+          default: ''
+
+    - title: Observability
+      properties:
+        observability_window:
+          title: Observability Options
+          type: object
+          properties:
+            observability_window_mode:
+              title: Do you want to configure grafana dashboards for the application?
+              type: string
+              enum:
+              - default
+              - custom
+              enumNames:
+              - 'No'
+              - 'Yes'
+              default: default
+          dependencies:
+            observability_window_mode:
+                oneOf:
+                - properties:
+                   observability_window_mode:
+                     enum:
+                        - default          
+                - properties:
+                    observability_window_mode:
+                      enum:
+                        - custom
+                    observability_grafana:
+                      title: Insert a Grafana URL
+                      type: string
+
+    - title: Spec Configuration
+      required:
+        - specPublish
+        - specPublishBranch
+      description: Spec House Configuration
+      properties:
+        specPublishBranch:
+          title: Branch name
+          type: string
+          description: Default branch of spechouse repository
+        specPublish:
+          type: string
+          ui:field: RepoUrlPlatform
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+              - bitbucket.org
+        specTags:
+          title: Tags
+          type: object
+          properties:
+            tags:
+              title: Want to set tags for your spec?
+              type: string
+              enum:
+              - default
+              - custom
+              enumNames:
+              - 'No'
+              - 'Yes'
+              default: default
+          dependencies:
+            tags:
+                oneOf:
+                - properties:
+                   tags:
+                     enum:
+                        - default          
+                - properties:
+                    tags:
+                      enum:
+                        - custom
+                    project_tags:
+                      title: Insert a Tag
+                      type: array
+                      ui:help: Write using camelCase or separate words using "-"
+                      items:
+                        type: string         
+                            
+        plugins:
+          title: Choose plugins for your Project
+          type: object
+          properties:
+            kubernetes:
+              title: Kubernetes
+              type: boolean
+              default: true
+            vault:
+              title: Vault
+              type: boolean
+              default: true
+            grafana:
+              title: Grafana
+              type: boolean
+              default: true
+            plugin_argocd:
+              title: ArgoCD
+              type: boolean
+              default: true
+          
+          
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository visibility
+          type: string
+          ui:field: RepoUrlPlatform
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+              - bitbucket.org
+        visibility:
+          title: Private Repository
+          type: string
+          enum:
+            - public
+            - private
+          enumNames:
+            - 'Public'
+            - 'Private'
+          default: private
+
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          componentId: ${{ parameters.componentId }}
+          description: ${{ parameters.description }}
+          artifact: ${{ parameters.artifact }}
+          javaVersion: ${{ parameters.javaVersion }}
+          applicationPort: ${{ parameters.applicationPort }}
+          database_window: ${{ parameters.database_window.database_window_mode }}
+          database: ${{ parameters.database_window.database }}
+          dbUsername: ${{ parameters.database_window.dbUsername }}
+          dbPassword: ${{ parameters.database_window.dbPassword }}]
+          docker_window: ${{ parameters.docker_window.docker_window_mode }}
+          docker_organization: ${{ parameters.docker_window.docker_organization }}
+          docker_generic: ${{ parameters.docker_window.docker_generic }} 
+          argoRepoUrl: ${{ (parameters.argoRepoUrl | parseRepoUrl).owner }}/${{ (parameters.argoRepoUrl | parseRepoUrl).repo }}
+          argoRepo: ${{ (parameters.argoRepoUrl | parseRepoUrl).repo }}
+          argoRepoBranch: ${{ parameters.argoRepoBranch }}
+          exportKongKubernetes: ${{ parameters.exportKongKubernetes }} 
+          mockserverUrl: ${{ parameters.mockserverUrl }}   
+          specPublish: ${{ (parameters.specPublish | parseRepoUrl).owner }}/${{ (parameters.specPublish | parseRepoUrl).repo }}
+          specPublishRepo: ${{ (parameters.specPublish | parseRepoUrl).repo }}
+          specPublishBranch: ${{ parameters.specPublishBranch }}
+          specTags: ${{ parameters.specTags.tags }}
+          tags: ${{ parameters.specTags.project_tags }}
+          enable_kubernetes_plugin: ${{ parameters.plugins.kubernetes }}
+          enable_vault_plugin: ${{ parameters.plugins.vault }}
+          enable_grafana_plugin: ${{ parameters.plugins.grafana }}
+          enable_argocd_plugin: ${{ parameters.plugins.argocd }}
+          observability_window: ${{ parameters.observability_window.observability_window_mode }}
+          observability_grafana: ${{ parameters.observability_window.observability_grafana }} 
+          owner: ${{ parameters.owner }}
+          repoUrl: ${{ (parameters.repoUrl | parseRepoUrl).owner }}/${{ (parameters.repoUrl | parseRepoUrl).repo }}
+          host : ${{ (parameters.repoUrl | parseRepoUrl).host }}
+         
+  
+    # check observability
+    - name: Check Observability
+      if: ${{ parameters.observability_window.observability_window_mode === 'default' }}
+      action: fs:delete
+      input:
+        files: 
+          - ./.github/workflows/application-dashboards.yml
+          - ./dashboards
+
+    # check github
+    - name: Check Github Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "github.com" }} 
+      action: fs:delete
+      input:
+        files: 
+          - ./.gitlab-ci.yml 
+          - ./bitbucket-pipelines.yml
+    # check gitlab
+    - name: Check Gitlab Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "gitlab.com" }} 
+      action: fs:delete
+      input:
+        files:
+          - ./.github
+          - ./bitbucket-pipelines.yml
+    # check bitbucket      
+    - name: Check Bitbucket Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "bitbucket.org" }} 
+      action: fs:delete
+      input:
+        files:
+          - ./.github
+          - ./.gitlab-ci.yml 
+
+    - id: publish
+      name: Publish in Github
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "github.com" }} 
+      action: publish:github
+      input:
+        allowedHosts:
+          - github.com
+        description: This is ${{ parameters.componentId }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}
+      
+    - id: publish
+      name: Publish in Gitlab
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "gitlab.com" }}
+      action: publish:gitlab
+      input:
+        allowedHosts:
+          - gitlab.com
+        description: This is ${{ parameters.componentId }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}   
+    
+    - id: publish
+      name: Publish in Bitbucket
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "bitbucket.org" }} 
+      action: publish:bitbucketCloud
+      input:
+        allowedHosts:
+          - bitbucket.org
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

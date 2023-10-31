@@ -1,0 +1,10 @@
+FROM gradle AS build
+WORKDIR /code
+COPY . /code/
+RUN gradle build
+
+FROM openjdk:${{ values.javaVersion }}-slim
+EXPOSE ${{ values.applicationPort }}
+WORKDIR /app
+COPY --from=build /code/build/libs/*.jar .
+CMD java -jar *.jar

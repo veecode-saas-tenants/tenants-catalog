@@ -1,0 +1,8 @@
+services:
+  ${{values.componentId}}:
+    build: .
+    command: npm run start
+    volumes:
+      - .:/usr/app/
+    ports:
+      - "4000:4000"
