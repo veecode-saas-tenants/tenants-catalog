@@ -9,3 +9,4 @@ spec:
     - ./templates/platform-templates.yaml
     - ./environment/*.yaml
     - ./cluster/*.yaml
+    - ./component/*.yaml

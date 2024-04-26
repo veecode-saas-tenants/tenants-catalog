@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: "app-demo-spec-1"
+  description: "Artifacts generator via Spec."
+  annotations:
+    github.com/project-slug: veecode-platform/app-demo-spec-1
+    backstage.io/techdocs-ref: dir:.
+    github.com/workflows: publish.yml
+    
+spec:
+  type: devops
+  lifecycle: experimental
+  owner: "group:default/admin"
+  providesApis:
+    - app-demo-spec-1
