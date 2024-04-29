@@ -12,6 +12,7 @@ spec:
   type: service
   lifecycle: experimental
   owner: admin
+  environment: 'environment:default/ec2_environment'
 
 
 

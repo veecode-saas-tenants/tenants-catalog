@@ -14,3 +14,4 @@ spec:
   owner: "group:default/admin"
   providesApis:
     - app-demo-spec-1
+  environment: 'environment:default/ec2_environment'
