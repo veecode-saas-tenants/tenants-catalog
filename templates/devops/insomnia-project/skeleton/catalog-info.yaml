@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{values.componentId}}
+  {%- if values.description %}
+  description: ${{values.description | dump}}
+  {%- endif %}
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/kubernetes-id: ${{values.componentId | dump}}
+    github.com/project-slug: ${{values.repoUrl}}
+    vault.io/secrets-path: ${{values.componentId | dump}}
+    grafana/dashboard-selector: ${{values.componentId | dump}}
+    grafana/alert-label-selector: "alertname=${{values.componentId}}"
+    argocd/proxy-url: '/argocd/api'
+    argocd/app-name: ${{values.componentId | dump}}
+spec:
+  type: openapi
+  lifecycle: experimental
+  owner: ${{values.owner | dump}}
+
+
+

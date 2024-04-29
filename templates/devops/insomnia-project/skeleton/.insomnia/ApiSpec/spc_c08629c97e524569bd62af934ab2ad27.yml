@@ -1,0 +1,50 @@
+_id: spc_c08629c97e524569bd62af934ab2ad27
+type: ApiSpec
+parentId: wrk_b4825089487f444ab1855ae62dd5a3cb
+modified: 1664460503094
+created: 1664441753470
+fileName: safira-sample-spec.yaml
+contents: >
+  openapi: 3.0.0
+
+  info:
+    description: "This is a sample API spec for Safira CLI demonstration.
+      You can find out more about Safira CLI at 
+      [https://docs.apr.vee.codes/](https://docs.apr.vee.codes/)."
+    version: 1.0.0
+    title: Safira CLI Sample API
+    termsOfService: https://apr.vee.codes/terms-of-service/
+    contact:
+      email: platform-sales@vee.codes
+    license:
+      name: Apache 2.0
+      url: http://www.apache.org/licenses/LICENSE-2.0.html
+  tags:
+    - name: echo
+      description: Echo services
+  servers:
+    - url: "http://localhost:8000"
+    - url: "http://localhost:8080"
+    - url: "http://localhost:9000"
+  paths:
+    /echo:
+      get:
+        tags:
+          - echo
+        summary: "Returns the 'message' to the caller"
+        description: "Returns the 'message' to the caller without changing or forwarding it."
+        operationId: echo
+        parameters:
+          - name: message
+            in: query
+            schema:
+              type: string
+            required: true
+        responses:
+          "200":
+            description: "Answer"
+            content:
+              application/text:
+                schema:
+                  type: string
+contentType: yaml
