@@ -9,5 +9,6 @@ spec:
     - ./templates/platform-templates.yaml
     - ./environment/*.yaml
     - ./cluster/*.yaml
-    - ./component/*.yaml
+    - ./component/app-demo-spec-1/*.yaml
+    - ./component/app-exemple-platform-k8s/*.yaml
     - ./team/*.yaml
