@@ -10,4 +10,4 @@ spec:
     - ./environment/*.yaml
     - ./cluster/*.yaml
     - ./component/*.yaml
-    - ./team/*.yaml
+#    - ./team/*.yaml
