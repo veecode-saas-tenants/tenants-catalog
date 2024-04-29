@@ -8,7 +8,7 @@ spec:
     - ./devops/openapi-project/template.yaml
     - ./java/spring-boot-3/template.yaml
     - ./java/quarkus/template.yaml
-    - ./node/okteto-express-demo/template.
+    - ./node/okteto-express-demo/template.yaml
     - ./devops/cluster_ec2/template.yaml
     - ./node/express/template.yaml
     - ./devops/eks_ingress/template.yaml
