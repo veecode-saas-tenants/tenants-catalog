@@ -11,7 +11,7 @@ metadata:
 spec:
   type: service
   lifecycle: experimental
-  owner: admin
+  owner: "group:default/admin"
   environment: 'environment:default/ec2_environment'
 
 
