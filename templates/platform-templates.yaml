@@ -12,7 +12,7 @@ spec:
     - ./devops/cluster_ec2/template.yaml
     - ./node/express/template.yaml
     - ./devops/eks_ingress/template.yaml
-   - ./devops/insomnia-project/template.yaml
+    - ./devops/insomnia-project/template.yaml
     - ./devops/kong/template.yaml
     - ./nextJS/template.yaml
     - ./devops/observability_stack/template.yaml
