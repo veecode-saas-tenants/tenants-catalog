@@ -1,0 +1,272 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: terraform-eks-environment
+  title: Provision EKS Environment
+  description: Provision EKS Cluster using Terraform
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - platform-templates
+    - k8s
+    - terraform
+spec:
+  owner: veecode/platform
+  type: devops
+  parameters:
+  ### Project Configuration
+    - title: Enviroment Settings
+      properties:
+        environmentResource.:
+          title: Select the enviromnet from our catalog
+          type: object
+          ui:field: ResourcePicker
+          ui:options:
+            catalogFilter:
+              kind: [Environment]
+    ### Project Configuration
+    - title: EKS Configuration
+      required:
+        - eks_cluster_name
+        - capacity_type
+        - instance_type
+        - node_quantity
+        - max_node_quantity
+        - owner
+      properties:
+        eks_cluster_name:
+          title: EKS Cluster name
+          type: string
+          pattern: '^([a-z0-9]|[.]|[_]|[-])*$'
+          description: Specifies the EKS Cluster name
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+        k8s_version:
+          title: Kubernetes Version
+          type: string
+          description: Specifies the EKS Kubernetes Version
+          default: "1.27"
+          enum:
+            - "1.27"
+            - "1.26"
+            - "1.25"
+            - "1.24"
+        instance_type:
+          title: Node instance type
+          type: string
+          description: Specifies the EKS Node instance type
+          default: t3.small
+          enum:
+            - t3.small
+            - m5.large
+            - m5.xlarge
+            - t4g.small
+            - m6g.large
+            - m6g.xlarge
+          enumNames:
+            - "t3.small (vCPU:2, Mem: 2Gib)"
+            - "m5.large (vCPU:2, Mem: 8Gib)"
+            - "m5.xlarge (vCPU:4, Mem: 16Gib)"
+            - "t4g.small (vCPU:2, Mem: 2Gib)"
+            - "m6g.large (vCPU:2, Mem: 8Gib) ARM"
+            - "m6g.xlarge (vCPU:4, Mem: 16Gib) ARM"
+        capacity_type:
+          title: Purchasing option
+          type: string
+          description: Specifies the Node Group purchasing option
+          default: SPOT
+          enum:
+            - 'ON_DEMAND'
+            - 'SPOT'
+          enumNames:
+            - 'On demand'
+            - 'Spot Instance'
+            
+        node_quantity:
+          title: Node Quantity
+          type: number
+          description: Specifies the Node Group quantity
+          default: 1
+        max_node_quantity:
+          title: Max Node Quantity
+          type: number
+          description: Specifies the Node Group max quantity
+          default: 3
+        rolearn:
+          title: EKS role_arn acess
+          type: string
+          description: Specifies the EKS Cluster role_arn acess
+        
+    - title: Terraform Configuration
+      required:
+        - terraformStateBucketName
+        - terraformStateBucketRegion
+      properties:
+        terraformStateBucketName:
+          title: Terraform State Bucket Name
+          type: string
+          description: Specifies your Terraform State Bucket
+
+        terraformStateBucketRegion:
+          title: Bucket Region
+          type: string
+          description: Specifies the Terraform State Bucket region
+          default: 'us-east-1'
+          enum:
+            - 'us-east-2'
+            - 'us-east-1'
+            - 'us-west-1'
+            - 'us-west-2'
+          enumNames:
+            - 'US East (Ohio)'
+            - 'US East (N. Virginia)'
+            - 'US West (N. California)'
+            - 'US West (Oregon)'
+          
+        infracost:
+          title: Enable Infracost Estimate
+          type: boolean
+          default: false
+
+### Observability
+    - title: Observability
+      properties:
+        observability_window:
+          title: Observability Options
+          type: object
+          properties:
+            observability_window_mode:
+              title: Do you want to configure grafana dashboards for the application?
+              type: boolean
+              enum:
+              - false
+              - true
+              enumNames:
+              - false
+              - true
+              default: false
+          dependencies:
+            observability_window_mode:
+                oneOf:
+                - properties:
+                   observability_window_mode:
+                     enum:
+                        - false          
+                - properties:
+                    observability_window_mode:
+                      enum:
+                        - true
+                    observability_label:
+                      title: Set a label for the dashboard
+                      type: string
+                      pattern: '^([a-z]|[.]|[_])*$'
+                      ui:help: 'Only lower case letters and "_"'
+
+                    observability_grafana_url:
+                      title: Insert a Grafana URL
+                      type: string
+                      default: 'https://grafana.apr.vee.codes'
+
+    ### Location Configuration
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          description: Choose a location to create the EKS Cluster Pipeline
+          ui:field: RepoUrlSelector
+        visibility:
+          title: Repository visibility
+          type: string
+          enum:
+            - public
+            - private
+          enumNames:
+            - 'Public'
+            - 'Private'
+          default: private
+
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton      
+        values:        
+          vpc_id: ${{ parameters.environmentResource.vpc_id }}
+          vpc_name: ${{ parameters.environmentResource.vpc_name }}
+          eks_cluster_name: ${{ parameters.eks_cluster_name }}
+          owner: ${{ parameters.owner }}
+          k8s_version: ${{ parameters.k8s_version }}
+          instance_type: ${{ parameters.instance_type }}
+          capacity_type: ${{ parameters.capacity_type }}
+          node_quantity: ${{ parameters.node_quantity }}
+          max_node_quantity: ${{ parameters.max_node_quantity }}
+          rolearn: ${{ parameters.rolearn }}
+          terraformStateBucketName: ${{ parameters.terraformStateBucketName }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl | pick('owner') }}/${{ parameters.repoUrl | parseRepoUrl | pick('repo') }}
+          terraformStateBucketRegion: ${{ parameters.terraformStateBucketRegion }}
+          host: ${{ parameters.repoUrl | parseRepoUrl | pick('host') }}
+          infracost: ${{ parameters.infracost }}
+          repoUrl: ${{ (parameters.repoUrl | parseRepoUrl).owner }}/${{ (parameters.repoUrl | parseRepoUrl).repo }}
+          environment: ${{ parameters.environmentResource.name }}
+          domain: ${{ parameters.environmentResource.domain }}
+          email: ${{ parameters.environmentResource.certManagerEmail }}
+          cert_manager: ${{ parameters.environmentResource.certManagerIssuerType }}
+          specPublish: ${{ parameters.specPublish | parseRepoUrl | pick('owner') }}/${{ parameters.specPublish | parseRepoUrl | pick('repo') }}
+          specPublishRepo: ${{ parameters.specPublish | parseRepoUrl | pick('repo') }}
+          specPublishBranch: ${{ parameters.specPublishBranch }}
+          specTags: ${{ parameters.specTags }}
+          hostedZoneId: ${{ parameters.environmentResource.hostedZoneId }}
+          observability_window: ${{ parameters.observability_window.observability_window_mode }}
+          observability_grafana_url: ${{ parameters.observability_window.observability_grafana_url }}
+          observability_label: ${{ parameters.observability_window.observability_label }}
+
+    - name: Check Infracost
+      if: ${{ parameters.infracost === false }}
+      action: fs:delete
+      input:
+        files: 
+          - ./.github/workflows/infracost.yml
+
+    - name: Check Observability
+      if: ${{ parameters.observability_window.observability_window_mode === false }}
+      action: fs:delete
+      input:
+        files: 
+          - ./.github/workflows/deploy_dashboard.yml
+          - ./dashboard-overview.json
+
+    - id: publish
+      name: Publish in github  
+      action: publish:github
+      input:
+        allowedHosts: ["github.com"]
+        description: EKS Cluster ${{ parameters.eks_cluster_name }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}
+ 
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+        
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
+  
+  

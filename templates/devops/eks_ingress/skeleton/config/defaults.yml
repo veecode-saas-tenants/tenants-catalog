@@ -1,0 +1,37 @@
+---
+vpc_name: "${{ values.vpc_name }}"
+vpc_id: "${{ values.vpc_id }}"
+cluster_name: "${{ values.eks_cluster_name }}"
+cluster_version: "${{ values.k8s_version }}"
+cidr_block: 10.50.0.0/16
+private_subnets:
+  - 10.50.10.0/24
+  - 10.50.20.0/24
+  - 10.50.30.0/24
+public_subnets:
+  - 10.50.40.0/24
+  - 10.50.50.0/24
+  - 10.50.60.0/24
+aws_availability_zones: ["us-east-1a","us-east-1b","us-east-1c"]
+node_groups:
+  eks-sample:
+    desired_capacity: "${{ values.node_quantity }}"
+    max_capacity: "${{ values.max_node_quantity }}"
+    min_capacity: "1"
+    ami_type: AL2_x86_64
+    instance_types:
+      - "${{ values.instance_type }}"
+    capacity_type: "${{ values.capacity_type }}"
+cluster_enabled_log_types:
+  - api
+  - audit
+  - authenticator
+  - controllerManager
+  - scheduler
+users_list:
+  - name: root-user
+    role: root
+tags:
+  Project: VKPR
+  Source: aws-eks
+rolearn: "${{ values.rolearn }}"

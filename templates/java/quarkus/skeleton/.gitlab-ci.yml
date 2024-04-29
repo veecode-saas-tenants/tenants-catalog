@@ -11,12 +11,10 @@ stages:
   - publish_dashboard_grafana
   {%- endif %}
 
-variables:
-  API_TOKEN_GITLAB: $API_TOKEN_GITLAB
 
 build_project:
   stage: build
-  image: gradle:jdk-${{ values.javaVersion }}-alpine
+  image: gradle:7.5.1-jdk${{ values.javaVersion }}-alpine
   variables:
     DOCKER_REGISTRY: {% if values.docker_window == 'custom' %}${{ values.docker_generic }}{% else %}registry.hub.docker.com{% endif %}
     DOCKER_NAMESPACE: ${{ values.docker_organization }}
@@ -50,11 +48,14 @@ publish_k8s:
     CI_REGISTRY_USER: $CI_REGISTRY_USER
     CI_REGISTRY_PASSWORD: $API_TOKEN_GITLAB
   before_script:
-    - apt-get update && apt-get install -y apt-transport-https gnupg2 curl kubectl git
+    - apt-get update
+    - apt-get install -y git
+    - apt-get update && apt-get install -y apt-transport-https gnupg2 curl 
     - curl -sL https://github.com/mikefarah/yq/releases/download/v4.12.1/yq_linux_amd64 -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
     - yq --version
     - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
     - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+    - apt-get update && apt-get install -y kubectl
   script:
     - mkdir k8s/
     - kubectl create deployment spring-sample-app --namespace=vkpr --port=8080 --replicas=1 --image=docker.io/veecode/spring-sample-app:latest --dry-run=client -o=yaml > ./k8s/deployment.yaml
@@ -94,8 +95,10 @@ publish-spec:
   stage: publish_spec
   variables:
     MOCK_SERVER: "${{ values.mockserverUrl }}"
-    NAME: ""
-    TAGS: {% if values.specTags == "custom" %}"{% for tag in values.tags | string | list %}${{ tag }}{% endfor %}"{% else %}""{% endif %}
+    NAME: ${{ values.componentId }}
+    {%- if values.specTags == "custom" %}
+    TAGS: "{% for tag in values.tags | string | list %}${{ tag }}{% endfor %}"
+    {%- endif %}
   before_script:
     - apt-get update && apt-get -y install wget python3.9 jq git curl xz-utils
     - wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
@@ -107,6 +110,7 @@ publish-spec:
     - pip3 --version
     - pip3 install pyyaml
   script:
+    - test -f .insomnia/ApiSpec/spc_*.yml && export WORKSPACE_EXISTS=true || export WORKSPACE_EXISTS=false
     - |
         if [ $WORKSPACE_EXISTS = true ]; then
         apt-get -y install jq;
@@ -116,7 +120,6 @@ publish-spec:
         fi
     - |
         if [ $WORKSPACE_EXISTS = true ] && [ -n "$MOCK_SERVER" ]; then
-        NAME=$(echo $CI_PROJECT_PATH | cut -d '/' -f2);
         touch MOCK.yaml
         yq 'with(.paths; with_entries(.key |=strenv(NAME) + .))' ./openapi-swagger.yaml >> MOCK.yaml
         cat MOCK.yaml | python3 -c 'import sys, yaml, json; print(json.dumps(yaml.safe_load(sys.stdin.read()), indent=2, sort_keys=False))' > MOCK.json
@@ -125,8 +128,8 @@ publish-spec:
         yq ".servers += [{\"url\": \"$MOCK_SERVER $([[ ! "$MOCK_SERVER" == */ ]] && echo "/")${NAME}\"}]" -i ./openapi-swagger.yaml
         fi
     - echo "Spechouse Publish"
+    - ls
     - mkdir -p api/
-    - export NAME=$(echo $CI_PROJECT_PATH | awk -F / '{print $2}')
     - echo $NAME
     - touch "api/$NAME.yaml"
     - sed --in-place "s|\"|'|g" ./openapi-swagger.yaml
@@ -136,14 +139,16 @@ publish-spec:
     - yq eval ".metadata.title=\"$NAME\"" -i "api/$NAME.yaml"
     - yq eval ".metadata.publishedAt=\"$(date '+%Y-%m-%d %T')\"" -i "api/$NAME.yaml"
     - yq eval ".metadata.description= \"$(cat ./openapi-swagger.yaml | yq e '.info.description')\"" -i "api/$NAME.yaml"
+    {%- if values.specTags == "custom" %}
     - yq eval ".metadata.tags = (\"$TAGS\" | split(\",\") | map(sub(\" +\", \"\")))" -i "api/$NAME.yaml"
+    {%- endif %}
     - yq eval ".spec.type = \"openapi\"" -i "api/$NAME.yaml"
     - yq eval ".spec.lifecycle = \"production\"" -i "api/$NAME.yaml"
-    - yq eval ".spec.owner = \"consumer\"" -i "api/$NAME.yaml"
+    - yq eval ".spec.owner = \"${{ values.owner }}\"" -i "api/$NAME.yaml"
     - yq eval ".spec.definition = \"$(yq -I4 e '.')\"" -i "api/$NAME.yaml"
     - git config --global user.name "$CI_REGISTRY_USER"
     - git config --global user.email "$GITLAB_USER_EMAIL"
-    - git clone -b ${{ values.specPublishBranch }} https://oauth2:$API_TOKEN_GITLAB@gitlab.com/${{ values.specPublish }}.git 
+    - git clone -b ${{ values.specPublishBranch }} https://oauth2:$API_TOKEN_GITLAB@gitlab.com/${{ values.specPublish }}.git
     - cp -f ./api/$NAME.yaml ./${{ values.specPublishRepo }}/api
     - cd ${{ values.specPublishRepo }}
     - git add .

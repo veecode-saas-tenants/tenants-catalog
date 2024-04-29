@@ -1,0 +1,136 @@
+name: Kong Stack 
+
+on:
+ workflow_dispatch:
+
+{%- if values.cluster_type == "ec2" %}
+env:
+  PORT: 6550
+  USERNAME: ec2-user
+{%- endif %}
+
+jobs:
+
+  kong_stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{'${{'}} secrets.AWS_ACCESS_KEY ${{'}}'}}
+          aws-secret-access-key: ${{'${{'}} secrets.AWS_SECRET_KEY ${{'}}'}}
+          aws-region: ${{'${{'}} secrets.AWS_REGION ${{'}}'}}
+          
+      - name: Install Vkpr
+        shell: bash
+        run: |
+          curl -fsSL https://get.vkpr.net/ | CONTROL_SKIP="true" bash
+          rit update repo --name="vkpr-cli" --version=1.3.8
+
+      ### Configure VKPR Credentials
+      - name: config vkpr credentials
+        env:
+          MODE: ""
+        shell: bash
+        run: |
+            rit set credential --provider="aws" \
+                --fields="accesskeyid,region,secretaccesskey" \
+                --values="${{'${{'}} secrets.AWS_ACCESS_KEY ${{'}}'}},${{'${{'}} secrets.AWS_REGION ${{'}}'}},${{'${{'}} secrets.AWS_SECRET_KEY ${{'}}'}}" 
+            if [ '$MODE' != 'dbless' ]; then
+              POSTGRES_PASSWORD=${{'${{'}} secrets.POSTGRES_PASSWORD ${{'}}'}}
+              if [ -n "$POSTGRES_PASSWORD" ]; then
+                rit set credential --provider="postgres" \
+                --fields="password,service" \
+                --values="${{'${{'}} secrets.POSTGRES_PASSWORD ${{'}}'}},postgres" 
+              fi
+            fi
+                
+      - name: Kong License and Admin Password
+        run: |   
+            KONG_ADMIN_PASSWORD=${{'${{'}} secrets.KONG_ADMIN_PASSWORD ${{'}}'}}
+            if [ -n "$KONG_ADMIN_PASSWORD" ]; then
+                yq -i ".kong.rbac.adminPassword = \"$KONG_ADMIN_PASSWORD\"" $PWD/vkpr.yaml
+            fi
+            KONG_LICENSE=${{'${{'}} secrets.KONG_LICENSE ${{'}}'}}
+            if [ -n "$KONG_LICENSE" ]; then
+                touch license 
+                echo "$KONG_LICENSE" > license
+                yq -i ".kong.enterprise.license = \"$PWD/license\"" $PWD/vkpr.yaml
+            fi
+
+      {%- if values.external_db == true %}     
+      - name: Kong external database
+        run: |   
+            EXTERNAL_DB_HOST=${{'${{'}}secrets.EXTERNAL_DB_HOST ${{'}}'}}
+            EXTERNAL_DB_USER=${{'${{'}}secrets.EXTERNAL_DB_USER ${{'}}'}}
+            EXTERNAL_DB_DATABASE=${{'${{'}}secrets.EXTERNAL_DB_DATABASE ${{'}}'}}
+            EXTERNAL_DB_PASSWORD=${{'${{'}}secrets.EXTERNAL_DB_PASSWORD ${{'}}'}}
+            if [ -n "$EXTERNAL_DB_HOST" ]; then
+                yq -i ".kong.externalDb.host = \"$EXTERNAL_DB_HOST\"" $PWD/vkpr.yaml
+            fi
+            if [ -n "$EXTERNAL_DB_USER" ]; then
+                yq -i ".kong.externalDb.user = \"$EXTERNAL_DB_USER\"" $PWD/vkpr.yaml
+            fi
+            if [ -n "$EXTERNAL_DB_DATABASE" ]; then
+                yq -i ".kong.externalDb.database = \"$EXTERNAL_DB_DATABASE\"" $PWD/vkpr.yaml
+            fi
+            if [ -n "$EXTERNAL_DB_PASSWORD" ]; then
+                yq -i ".kong.externalDb.password = \"$EXTERNAL_DB_PASSWORD\"" $PWD/vkpr.yaml
+            fi           
+      {%- endif %}  
+
+      {%- if values.certmanager_window_mode == true %}     
+      - name: Cert-manager Config
+        run: |   
+            AWS_HOSTED_ZONE_ID=${{'${{'}}secrets.AWS_HOSTED_ZONE_ID ${{'}}'}}
+            if [ -n "$AWS_HOSTED_ZONE_ID" ]; then
+                yq -i ".cert-manager.hostedZoneID = \"$AWS_HOSTED_ZONE_ID\"" $PWD/vkpr.yaml  
+            fi 
+      {%- endif %}    
+
+      {%- if values.cluster_type == "eks" %}
+      - name: VKPR eks apply
+        run: |
+          shopt -s expand_aliases
+          alias vkpr="rit vkpr"
+          {%- if values.cluster_name %} CLUSTER_NAME=${{ values.cluster_name }} {%- else %} CLUSTER_NAME=${{'${{'}} secrets.CLUSTER_NAME ${{'}}'}}{%- endif %}
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region ${{'${{'}} secrets.AWS_REGION ${{'}}'}}
+          vkpr apply --path_to_file="$(pwd)/vkpr.yaml"
+      {%- endif %}
+
+      {%- if values.cluster_type == "ec2" %}
+      - name: Write secret to file
+        run: |
+          echo "${{'${{'}} secrets.KEYPAIR ${{'}}'}}" > cert.pem
+          chmod 600 cert.pem
+
+      - name: Generate kube config with k3s  		
+        run: |
+          HOST=`aws ec2 describe-instances --filters 'Name=tag:Name,Values=${{ values.cluster_name }}'  --output text --query 'Reservations[*].Instances[*].PublicIpAddress'`
+          ssh -i ./cert.pem -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p .kube && k3d kubeconfig get k3s > ~/.kube/config"
+          echo "Host=$HOST" >> $GITHUB_ENV
+          
+      - name: VKPR ec2 apply
+        run: |
+            shopt -s expand_aliases
+            alias vkpr="rit vkpr"
+            mkdir -p ~/.kube
+            scp -i ./cert.pem -o StrictHostKeyChecking=no $USERNAME@${{'${{'}} env.Host ${{'}}'}}:~/.kube/config ~/.kube/config
+            CERTIFICATE=`cat  ~/.kube/config |grep certificate-authority-data `
+            sed -i "s|$CERTIFICATE|    insecure-skip-tls-verify: true|g" ~/.kube/config
+            sed -i "s|0.0.0.0|${{'${{'}} env.Host ${{'}}'}}|g" ~/.kube/config
+            vkpr apply --path_to_file="$(pwd)/vkpr.yaml"
+      {%- endif %}   
+ #     {%- if values.cluster_type == "ec2" %} 
+ #     - name: Include record domain
+ #       run: |         
+ #          aws route53 change-resource-record-sets --hosted-zone-id ${{'${{'}}secrets.AWS_HOSTED_ZONE_ID ${{'}}'}} --change-batch file://dns.json 
+ #     {%- endif %} 
+      - name: Upload kubeconfig file as artefact
+        uses: actions/upload-artifact@v2
+        with:
+          name: kubeconfig
+          path: ~/.kube/config
+

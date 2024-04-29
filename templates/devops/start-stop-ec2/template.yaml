@@ -1,0 +1,291 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: start-stop-ec2
+  title: Start & Stop EC2 Template
+  description: Using lambda with the help of serverless, to optimize the use of EC2 infrastructure.
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - platform-templates
+    - aws
+    - lambda
+    - ec2
+    - serverless
+spec:
+  owner: veecode/platform
+  type: devops
+  parameters:
+    # internal use in devportal
+    - title: Information for using the catalog
+      required:
+        - componentId
+        - owner
+      properties:
+        componentId:
+          title: Name
+          type: string
+          pattern: '^([a-z0-9]|[.]|[_]|[-])*$'
+          description: Unique name of the component
+          ui:field: EntityNamePicker
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this component is for.
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component (Devportal)
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group]
+              
+    # project
+
+    - title: Project Settings
+      properties:
+        region:  
+             title: Lambda Region
+             type: string
+             description: Specifies the Lambda region
+             default: 'us-east-1'
+             enum:
+               - 'us-east-2'
+               - 'us-east-1'
+               - 'us-west-1'
+               - 'us-west-2'
+             enumNames:
+               - 'US East (Ohio)'
+               - 'US East (N. Virginia)'
+               - 'US West (N. California)'
+               - 'US West (Oregon)'
+        stage:
+          title: 'Define the stage of the project'
+          type: string
+          enum:
+            - dev
+            - prod
+          enumNames:
+            - 'DEV'
+            - 'PROD'
+          default: dev
+        default_branch:
+          title: 'Define default branch'
+          type: string
+          default: 'master'
+        bucket:
+          title: 'Set a bucket for the project?'
+          type: object
+          properties:
+            bucket_options:
+              title: 'Set a bucket:'
+              type: string
+              enum:
+              - custom
+              - default
+              enumNames:
+              - 'Set bucket'
+              - 'Generate a new bucket automatically'
+              default: default
+          dependencies:
+            bucket_options:
+                oneOf:
+                - properties:
+                    bucket_options:
+                      enum:
+                        - default
+                - properties:
+                    bucket_options:
+                      enum:
+                        - custom
+                    bucket_name:
+                      title: 'Enter the name of the bucket:'
+                      type: string
+                      ui:help: 'This bucket must exist, if it does not, select the option to generate a new bucket automatically.'
+          
+    - title: Instances
+      required:
+        - instance_ids
+      properties:
+        instance_ids:  
+          type: array
+          title: Set the instance Id
+          items:
+            type: string
+    
+    - title: Configure Cron
+      properties:
+        start_time:
+          title: Start Time (UTC)
+          type: string
+          maxLength: 5
+          default: '00 12'
+          ui:help: 'MM HH format (Use space between the minutes and hours)'
+        stop_time:
+          title: Stop Time (UTC)
+          type: string
+          maxLength: 5
+          default: '00 22'
+          ui:help: 'MM HH format (Use space between the minutes and hours)'
+        schedule_init:
+          title: Day of the Week to init the schedule
+          type: string
+          default: MON
+          enum:
+          - SUN
+          - MON
+          - TUE
+          - WED
+          - THU
+          - FRI
+          - SAT
+          enumNames:
+          - 'Sunday'
+          - 'Monday'
+          - 'Tuesday'
+          - 'Wednesday'
+          - 'Thursday'
+          - 'Friday'
+          - 'Saturday'
+        schedule_stop:
+          title: Day of the Week to stop the schedule
+          type: string
+          default: FRI
+          enum:
+          - SUN
+          - MON
+          - TUE
+          - WED
+          - THU
+          - FRI
+          - SAT
+          enumNames:
+          - 'Sunday'
+          - 'Monday'
+          - 'Tuesday'
+          - 'Wednesday'
+          - 'Thursday'
+          - 'Friday'
+          - 'Saturday'
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlSelector
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+        visibility:
+          title: Private Repository
+          type: string
+          enum:
+            - public
+            - private
+          enumNames:
+            - 'Public'
+            - 'Private'
+          default: private
+
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton      
+        values:
+         componentId: ${{ parameters.componentId }}
+         description: ${{ parameters.description }}
+         owner: ${{ parameters.owner }}
+         region: ${{ parameters.region }}
+         stage: ${{ parameters.stage }}
+         default_branch : ${{ parameters.default_branch }}
+         bucket: ${{ parameters.bucket.bucket_options }}
+         bucket_name: ${{ parameters.bucket.bucket_name }}
+         instance_ids: ${{ parameters.instance_ids }}
+         start_time: ${{ parameters.start_time }}
+         stop_time: ${{ parameters.stop_time }}
+         schedule_init: ${{ parameters.schedule_init }}
+         schedule_stop: ${{ parameters.schedule_stop }}
+         repoUrl: ${{ (parameters.repoUrl | parseRepoUrl).owner }}/${{ (parameters.repoUrl | parseRepoUrl).repo }}      
+         host:  ${{ (parameters.repoUrl | parseRepoUrl).host }}
+
+    - name: Check Bucket Options
+      if: ${{ parameters.bucket.bucket_options == 'default' }}
+      action: fs:delete
+      input:
+        files:
+          - ./config/config.dev.yaml
+          - ./config/config.prod.yaml
+
+    - name: Check Dev Stage
+      if: ${{ parameters.stage == 'dev' }}
+      action: fs:delete
+      input:
+        files:
+          - ./config/config.prod.yaml
+
+    - name: Check Prod Stage 
+      if: ${{ parameters.stage == 'prod' }}
+      action: fs:delete
+      input:
+        files:
+          - ./config/config.dev.yaml
+      
+    - name: Check Github Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "github.com" }} 
+      action: fs:delete
+      input:
+        files:
+          - ./.gitlab-ci.yml
+
+    - name: Check Gitlab Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "gitlab.com" }} 
+      action: fs:delete
+      input:
+        files:
+          - ./.github
+
+    - id: publish
+      name: Publish in github
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "github.com" }} 
+      action: publish:github
+      input:
+        allowedHosts: ["github.com"]
+        description: This is ${{ parameters.componentId }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: ${{ parameters.default_branch }}
+        repoVisibility: ${{ parameters.visibility }}
+
+    - id: publish
+      name: Publish in gitlab
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "gitlab.com"  }} 
+      action: publish:gitlab
+      input:
+        allowedHosts: ["gitlab.com"]
+        description: This is ${{ parameters.componentId }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: ${{ parameters.default_branch }}
+        repoVisibility: ${{ parameters.visibility }}
+    
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+        
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
+  

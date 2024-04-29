@@ -1,0 +1,16 @@
+global:
+  domain: ${{ values.domain }}
+  secure: true
+  provider: aws
+kong: 
+  enabled: true
+  basic_auth: ${{ values.basic_auth }}
+  mode: ${{ values.kong_mode }}
+{%- if values.certmanager_window_mode == true %}  
+cert-manager:
+  enabled: true
+  email: ${{ values.email }} 
+  issuer:
+    type: "${{ values.issuer_type }}"
+    solver: "DNS01"
+{%- endif %}

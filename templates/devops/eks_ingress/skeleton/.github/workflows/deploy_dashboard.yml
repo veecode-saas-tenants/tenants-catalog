@@ -1,0 +1,33 @@
+name: Deploying the overview cluster's dashboards on Grafana address.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Adding_Dashboards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Getting the UID from datasources
+
+      - name: Getting uid from Prometheus datasource
+        run: |
+          export UID_METRICS_DASHBOARD=$(curl -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" --url ${{ values.observability_grafana_url }}/api/datasources | jq '.[] | select(.type == "prometheus")'.uid)
+          echo "UID_METRICS = $UID_METRICS_DASHBOARD" 
+          echo "UID_METRICS=$UID_METRICS_DASHBOARD" >> $GITHUB_ENV
+
+      # Change UID from defaults dashboard
+      - name: Changing uid of dashboard from Prometheus
+        run: |
+          jq '(.dashboard.panels[].datasource | select(.type == "prometheus")).uid |= ${{'${{'}} env.UID_METRICS ${{'}}'}}' "dashboard-overview.json" > ${{ values.eks_cluster_name }}-dashboard-overview.json
+          cat ${{ values.eks_cluster_name }}-dashboard-overview.json
+
+      #POST Dashboards on Grafana API
+      - name: Post Overview dashboard
+        run: |
+          curl -X POST -d @${{ values.eks_cluster_name }}-dashboard-overview.json \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" \
+          --url ${{ values.observability_grafana_url }}/api/dashboards/db

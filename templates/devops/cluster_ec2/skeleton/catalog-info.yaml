@@ -1,0 +1,33 @@
+apiVersion: veecode.backstage.io/v1alpha1
+kind: Cluster
+metadata:
+  name: ${{ values.cluster_name | dump}}
+  {%- if values.description %}
+  description: ${{values.description | dump}}
+  {%- endif %}
+  environment:
+    cluster_type: ec2
+  annotations:
+    {%- if values.host.includes("github") %}
+    github.com/project-slug: ${{ values.destination }}
+    {%- endif %}
+    {%- if values.host.includes("gitlab") %}
+    gitlab.com/project-slug: ${{ values.destination }}
+    {%- endif %}
+    backstage.io/techdocs-ref: dir:.
+    {%- if values.host.includes("github")%}
+    github.com/workflows: terraform-deploy.yml,start-instance.yml,stop-instance.yml,terraform-destroy.yml,deploy-dashboard{% if values.infracost%},infracost.yml{% endif %}
+    {%- endif %}
+    {%- if values.host.includes("gitlab")%}
+    gitlab.com/jobs: Deploy:DEPLOY_JOB,Destroy:DESTROY_JOB{% if values.infracost%},Infracost:INFRACOST_JOB{% endif %}
+    {%- endif %}
+    {%- if values.observability_window %}
+    grafana/dashboard-selector: ${{values.cluster_name }}
+    grafana/alert-label-selector: "alertname=${{values.cluster_name}}"
+    {%- endif %}
+spec:
+  type: ec2
+  lifecycle: experimental
+  owner: ${{values.owner | dump}}
+  environment: 'environment:default/${{ values.environment}}'
+  

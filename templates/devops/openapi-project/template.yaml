@@ -16,22 +16,31 @@ spec:
     - title: Spec House Configuration
       required:
         - branchName
-      description: Spec House Configuration
+      description: Define which repository your spec will be published in
       properties:
         branchName:
           title: Branch name
           type: string
-          description: Name of the branch
+          description: the spec will be added to this branch
         specTags:
           title: Tags
           type: string
           description: Inputs tags separated by comma(,)
         specPublish:
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
+ 
+
+    - title: Mock Server Configuration
+      properties:
+        mockserverUrl:
+          title: Mockserver URL
+          type: string
+          description: 'Insert your mockerser host. ex.: https://mockserver.apr.vee.codes'
+          default: ''
 
     - title: Choose a location
       required:
@@ -49,7 +58,7 @@ spec:
         repoUrl:
           title: Repository Location
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
@@ -62,15 +71,7 @@ spec:
           enumNames:
             - 'Public'
             - 'Private'
-          default: private 
-
-    - title: Mock Server Configuration
-      properties:
-        mockserverUrl:
-          title: Mockserver URL
-          type: string
-          description: 'Insert your mockerser host. ex.: https://mockserver.apr.vee.codes'
-          default: ''
+          default: private
           
   steps:
     - id: template

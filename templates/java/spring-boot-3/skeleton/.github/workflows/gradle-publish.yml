@@ -97,7 +97,36 @@ jobs:
               .spec.syncPolicy.automated.prune=true |
               .spec.destination.server="https://kubernetes.default.svc" |
               .spec.destination.namespace="vkpr"''' -i config/${{values.componentId}}.yaml
+
+      {%- if values.observability_window %}   
+       
+      - name: Check grafana url
+        run: |
+          export GRAFANA_URL=${{values.observability_grafana}}
+          echo "CHECKED_URL=${GRAFANA_URL%/}"
+          echo "CHECKED_URL=${GRAFANA_URL%/}" >> $GITHUB_ENV
+          
+      - name: Creating K8s Dashboards Artifacts
+        run: |
+              export UID_METRICS_DASHBOARD=$(curl -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/datasources | jq '.[] | select(.type == "prometheus")'.uid)
+              export UID_LOG_DASHBOARD=$(curl -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/datasources | jq '.[] | select(.type == "loki")'.uid)
+              export UID_TRACE_DASHBOARD=$(curl -H "Authorization: Bearer ${{'${{'}} secrets.GRAFANA_API_TOKEN ${{'}}'}}" --url ${{'${{'}} env.CHECKED_URL ${{'}}'}}/api/datasources | jq '.[] | select(.type == "jaeger")'.uid)
       
+              jq "(.panels[].datasource | select(.type == \"jaeger\")).uid |= $UID_TRACE_DASHBOARD" dashboards/jaeger-trace.json > jaeger-trace-${{values.componentId}}.json
+              kubectl create configmap jaeger-trace-${{values.componentId}} --from-file=./jaeger-trace-${{values.componentId}}.json --dry-run=client -o=yaml > dashboards/jaeger-trace.yml
+              yq eval ".metadata.labels.grafana_dashboard=\"vkpr\" | del(.metadata.creationTimestamp)" -i dashboards/jaeger-trace.yml
+
+              jq "(.panels[].datasource | select(.type == \"loki\")).uid |= $UID_LOG_DASHBOARD" dashboards/loki-logs.json > loki-logs-${{values.componentId}}.json
+              kubectl create configmap loki-logs-${{values.componentId}} --from-file=./loki-logs-${{values.componentId}}.json --dry-run=client -o=yaml > dashboards/loki-logs.yml
+              yq eval ".metadata.labels.grafana_dashboard=\"vkpr\" | del(.metadata.creationTimestamp)" -i dashboards/loki-logs.yml
+
+              jq "(.panels[].datasource | select(.type == \"prometheus\")).uid |= $UID_METRICS_DASHBOARD" dashboards/kong-metrics.json > kong-metrics-${{values.componentId}}.json
+              kubectl create configmap kong-metrics-${{values.componentId}} --from-file=./kong-metrics-${{values.componentId}}.json --dry-run=client -o=yaml > dashboards/kong-metrics.yml
+              yq eval ".metadata.labels.grafana_dashboard=\"vkpr\" | del(.metadata.creationTimestamp)" -i dashboards/kong-metrics.yml
+              
+              cp ./dashboards/*.yml ./k8s
+
+      {%- endif %}
       {%- if values.exportKongKubernetes %}
 
       - name: Setup Insomnia CLI

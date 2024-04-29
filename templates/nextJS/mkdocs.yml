@@ -1,0 +1,8 @@
+site_name: NextJS Template
+site_description: Template for frontend applications
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core

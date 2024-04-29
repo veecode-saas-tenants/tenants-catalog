@@ -23,7 +23,7 @@ jar {
 
 repositories {
 	mavenCentral()
-    maven {
+	maven {
         url "https://repo.spring.io/release"
     }
     maven {

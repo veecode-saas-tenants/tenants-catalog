@@ -1,0 +1,7 @@
+---
+cluster_name: "${{ values.cluster_name }}"
+VPC_ID: "${{ values.VPC }}"
+publicsCIDRblock: "${{ values.subnet }}"
+availabilityZone: "${{ values.availabilityZone }}"
+instance_type: "${{ values.instance_type }}"
+keypar: "${{ values.keypair }}"

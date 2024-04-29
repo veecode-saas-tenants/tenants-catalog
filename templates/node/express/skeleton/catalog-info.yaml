@@ -1,0 +1,28 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{values.componentId | dump}}
+  {%- if values.description %}
+  description: ${{values.description | dump}}
+  {%- endif %}
+  annotations:
+    github.com/project-slug: ${{ values.repoUrl }}
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/kubernetes-id: ${{ values.cluster_name }}
+    github.com/workflows: build.yml
+  {%- if values.cluster_type === "eks" %}
+  links:
+    - title: ${{ values.componentId }} App
+      url: 'http://${{ values.domain }}/${{ values.componentId }}'
+  {%- endif %}
+  {%- if values.cluster_type === "ec2" %}
+  links:
+    - title: ${{ values.componentId }} App
+      url: 'http://${{ values.cluster_public_ip }}/${{ values.componentId }}'
+  {%- endif %}
+      
+spec:
+  type: service
+  lifecycle: development
+  owner: ${{values.owner | dump}}
+  subcomponentOf: 'cluster:default/${{ values.cluster_name }}'

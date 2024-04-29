@@ -15,7 +15,7 @@ metadata:
     vault.io/secrets-path: ${{values.componentId | dump}}
     {%- endif %}
     {%- if values.enable_grafana_plugin %}
-    grafana/tag-selector: ${{values.componentId | dump}}
+    grafana/dashboard-selector: ${{values.componentId | dump}}
     grafana/alert-label-selector: "alertname=${{values.destination.repo}}"
     {%- endif %}
     {%- if values.enable_argocd_plugin %}

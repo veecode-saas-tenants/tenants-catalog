@@ -1,0 +1,8 @@
+site_name: Kong Template
+site_description: kong Template 
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core

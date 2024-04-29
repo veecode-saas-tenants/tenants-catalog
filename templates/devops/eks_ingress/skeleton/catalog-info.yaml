@@ -1,0 +1,29 @@
+apiVersion: veecode.backstage.io/v1alpha1
+kind: Cluster
+metadata:
+  name: ${{ values.eks_cluster_name | dump}}
+  {%- if values.description %}
+  description: ${{values.description | dump}}
+  {%- endif %}
+  environment:
+    cluster_type: eks
+    domain: '${{ values.domain }}'
+  annotations:
+    {%- if values.host.includes("github") %}
+    github.com/project-slug: ${{ values.repoUrl }}
+    {%- endif %}
+    backstage.io/techdocs-ref: dir:.
+    {%- if values.host.includes("github")%}
+    github.com/workflows: terraform-deploy.yml,terraform-destroy.yml,deploy_dashboard.yml{% if values.infracost%},infracost.yml{% endif %}
+    {%- endif %}
+    veecode/cluster-name: ${{ values.eks_cluster_name }}
+    {%- if values.observability_window %}
+    grafana/dashboard-selector: ${{ values.eks_cluster_name }}
+    grafana/alert-label-selector: "alertname=${{ values.eks_cluster_name }}"
+    {%- endif %}
+spec:
+  type: eks
+  lifecycle: experimental
+  owner: ${{values.owner | dump}}
+  dependsOn: ["environment:default/${{ values.environment}}"]
+  

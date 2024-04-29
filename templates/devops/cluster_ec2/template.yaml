@@ -1,0 +1,283 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ec2_template_cluster
+  title: Provision Cluster in EC2 Instance
+  description: Provision Cluster in EC2 Instance
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - platform-templates
+    - k8s
+    - ec2
+    - terraform
+spec:
+  owner: veecode/platform
+  type: devops
+  parameters:
+  ### Enviroment Configuration
+    - title: Enviroment Settings
+      properties:
+        environmentResource:
+          title: Select the enviromnet from our catalog
+          type: object
+          ui:field: ResourcePicker
+          ui:options:
+            catalogFilter:
+              kind: [Environment]
+    ### Project Configuration
+    - title: EC2 Configuration
+      required:
+        - cluster_name
+        - instance_type
+        - keypair
+        - owner
+      properties:
+        cluster_name:
+          title: EC2 Cluster name
+          type: string
+          pattern: '^([a-z0-9]|[.]|[_]|[-])*$'
+          description: Specifies the Cluster name
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+        instance_type:
+          title: Node instance type
+          type: string
+          description: Specifies the EKS Node instance type
+          default: t3.medium
+          enum:
+            - t3.medium
+            - m5.large
+            - m5.xlarge
+            - t4g.small
+            - m6g.large
+            - m6g.xlarge
+          enumNames:
+            - "t3.medium (vCPU:2, Mem: 4Gib)"
+            - "m5.large (vCPU:2, Mem: 8Gib)"
+            - "m5.xlarge (vCPU:4, Mem: 16Gib)"
+            - "t4g.small (vCPU:2, Mem: 2Gib)"
+            - "m6g.large (vCPU:2, Mem: 8Gib) ARM"
+            - "m6g.xlarge (vCPU:4, Mem: 16Gib) ARM" 
+        keypair:  
+          title: Keypair Name to Access the Ec2
+          type: string
+          description: Specifies your Key pair to access the ec2
+          
+    - title: Network Configuration
+      required:
+        - availabilityZone
+        - subnet
+      properties:
+        availabilityZone:
+          title: Availability Zone the start Ec2
+          type: string
+          default: 'us-east-1a'
+          description: Specifies Availability Zone the ec2
+        subnet:
+          title: Specifies CIDRblock the subnet
+          type: string
+          description: Specifies CIDRblock the subnet
+
+    - title: Terraform Configuration
+      required:
+        - terraformStateBucketName
+        - terraformStateBucketRegion
+      properties:
+        terraformStateBucketName:
+          title: Terraform State Bucket Name
+          type: string
+          description: Specifies your Terraform State Bucket
+        terraformStateBucketRegion:
+          title: Bucket Region
+          type: string
+          description: Specifies the Terraform State Bucket region
+          default: 'us-east-1'
+          enum:
+            - 'us-east-2'
+            - 'us-east-1'
+            - 'us-west-1'
+            - 'us-west-2'
+          enumNames:
+            - 'US East (Ohio)'
+            - 'US East (N. Virginia)'
+            - 'US West (N. California)'
+            - 'US West (Oregon)'
+          
+        infracost:
+          title: Enable Infracost Estimate
+          type: boolean
+          default: false
+    ### Ngnix
+    - title: Ngnix
+      properties:
+        ngnix_window:
+          title: ngnix Options
+          type: object
+          properties:
+            ngnix_window_mode:
+              title: Do you want to configure ngnix ingress?
+              type: boolean
+              enum:
+              - false
+              - true
+              enumNames:
+              - false
+              - true
+              default: false
+
+    ### Observability
+    - title: Observability
+      properties:
+        observability_window:
+          title: Observability Options
+          type: object
+          properties:
+            observability_window_mode:
+              title: Do you want to configure grafana dashboards for the application?
+              type: boolean
+              enum:
+              - false
+              - true
+              enumNames:
+              - false
+              - true
+              default: false
+          dependencies:
+            observability_window_mode:
+                oneOf:
+                - properties:
+                   observability_window_mode:
+                     enum:
+                        - false          
+                - properties:
+                    observability_window_mode:
+                      enum:
+                        - true
+
+                    observability_grafana_url:
+                      title: Insert a Grafana URL
+                      type: string
+                      default: 'https://grafana.apr.vee.codes'
+      
+    ### Location Configuration
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          description: Choose a location to create the EKS Cluster Pipeline
+          ui:field: RepoUrlSelector
+        visibility:
+          title: Repository visibility
+          type: string
+          enum:
+            - public
+            - private
+          enumNames:
+            - 'Public'
+            - 'Private'
+          default: private
+
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton      
+        values:
+          cluster_name: ${{ parameters.cluster_name }}
+          owner: ${{ parameters.owner }}
+          instance_type: ${{ parameters.instance_type }}
+          keypair: ${{ parameters.keypair }}
+          environment: ${{ parameters.environmentResource.name}}
+          VPC: ${{ parameters.environmentResource.vpc_id }}
+          availabilityZone: ${{ parameters.availabilityZone }}
+          subnet: ${{ parameters.subnet }}
+          terraformStateBucketName: ${{ parameters.terraformStateBucketName }}
+          terraformStateBucketRegion: ${{ parameters.terraformStateBucketRegion }}
+          infracost: ${{ parameters.infracost }}
+          host: ${{ parameters.repoUrl | parseRepoUrl | pick('host') }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl | pick('owner') }}/${{ parameters.repoUrl | parseRepoUrl | pick('repo') }}
+          specPublish: ${{ parameters.specPublish | parseRepoUrl | pick('owner') }}/${{ parameters.specPublish | parseRepoUrl | pick('repo') }}
+          specPublishRepo: ${{ parameters.specPublish | parseRepoUrl | pick('repo') }}
+          specPublishBranch: ${{ parameters.specPublishBranch }}
+          ngnix_window: ${{ parameters.ngnix_window.observability_window_mode }}    
+          observability_window: ${{ parameters.observability_window.observability_window_mode }}
+          observability_grafana_url: ${{ parameters.observability_window.observability_grafana_url }}
+                 
+    - name: Check Infracost
+      if: ${{ parameters.infracost === false }}
+      action: fs:delete
+      input:
+        files: 
+          - ./.github/workflows/infracost.yml
+
+    - name: Check Observability
+      if: ${{ parameters.observability_window.observability_window_mode === false }}
+      action: fs:delete
+      input:
+        files: 
+          - ./.github/workflows/deploy_dashboard.yml
+          - ./vkpr.yaml
+          - ./dashboard-overview.json
+
+    - name: Check Github Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "github.com" }} 
+      action: fs:delete
+      input:
+        files:
+          - ./.gitlab-ci.yml
+
+    - name: Check Gitlab Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "gitlab.com" }} 
+      action: fs:delete
+      input:
+        files:
+          - ./.github
+    
+
+    - id: publish
+      name: Publish in github
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "github.com" }}  
+      action: publish:github
+      input:
+        allowedHosts: ["github.com"]
+        description: EKS Cluster ${{ parameters.eks_cluster_name }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}
+
+    - id: publish
+      name: Publish in gitlab
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "gitlab.com"  }} 
+      action: publish:gitlab
+      input:
+        allowedHosts: ["gitlab.com"]
+        description: EKS Cluster ${{ parameters.eks_cluster_name }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}
+    
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+        
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
+  
+  

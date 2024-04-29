@@ -150,7 +150,7 @@ spec:
             description: Default branch of argo repository
         argoRepoUrl:
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
@@ -174,46 +174,47 @@ spec:
           properties:
             observability_window_mode:
               title: Do you want to configure grafana dashboards for the application?
-              type: string
+              type: boolean
               enum:
-              - default
-              - custom
+              - false
+              - true
               enumNames:
-              - 'No'
-              - 'Yes'
-              default: default
+              - false
+              - true
+              default: false
           dependencies:
             observability_window_mode:
                 oneOf:
                 - properties:
                    observability_window_mode:
                      enum:
-                        - default          
+                        - false          
                 - properties:
                     observability_window_mode:
                       enum:
-                        - custom
+                        - true
                     observability_grafana:
                       title: Insert a Grafana URL
                       type: string
+                      default: 'https://grafana.apr.vee.codes'
 
     - title: Spec Configuration
       required:
         - specPublish
         - specPublishBranch
-      description: Spec House Configuration
+      description: Define which repository your spec will be published in
       properties:
         specPublishBranch:
                   title: Branch name
                   type: string
-                  description: Default branch of spechouse repository
+                  description: the spec will be added to this branch
         specTags:
           title: Tags
           type: string
           description: Inputs tags separated by comma(,)
         specPublish:
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
@@ -227,7 +228,7 @@ spec:
         repoUrl:
           title: Repository Location
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
@@ -281,11 +282,10 @@ spec:
           host: ${{ (parameters.repoUrl | parseRepoUrl).host }}
 
     - name: Check Observability
-      if: ${{ parameters.observability_window.observability_window_mode === 'default' }}
+      if: ${{ parameters.observability_window.observability_window_mode === false }}
       action: fs:delete
       input:
         files: 
-          - ./.github/workflows/application_dashboards.yml
           - ./dashboards
 
     # check github

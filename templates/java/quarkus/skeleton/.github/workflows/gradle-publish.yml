@@ -71,7 +71,7 @@ jobs:
   publish-spec:
     runs-on: ubuntu-latest
     env:
-      MOCK_SERVER: "${{ values.mockserverUrl }}"
+      {%- if values.mockserverUrl %}MOCK_SERVER: "${{ values.mockserverUrl }}"{%- endif %}
       NAME: ""    
     steps:
       - uses: actions/checkout@v3
@@ -110,6 +110,7 @@ jobs:
           inso generate config "$(cat .insomnia/ApiSpec/spc_*.yml | yq '.fileName')" --type kubernetes --output ./k8s/kong-kubernetes.yaml
       {%- endif %}
       
+      {%- if values.mockserverUrl %}
       - name: Publishing spec to mockserver
         if: "${{'${{'}} env.MOCK_SERVER != '' ${{'}}'}}"
         continue-on-error: true
@@ -121,12 +122,13 @@ jobs:
           curl --max-time 30 -v -X PUT "${{'${{'}} env.MOCK_SERVER ${{'}}'}}/mockserver/openapi$([ ! -z "$API_KEY" ] && echo "?apikey=${{ secrets.API_KEY }}")" -d "{"specUrlOrPayload": $(cat $PWD/MOCK.json)}"
           echo "Adding mockserver address to spec"
           yq ".servers += [{\"url\": \"${{'${{'}} env.MOCK_SERVER ${{'}}'}}$([[ ! "${{'${{'}} env.MOCK_SERVER ${{'}}'}}" == */ ]] && echo "/")${NAME}\"}]" -i ./openapi-swagger.yaml
-
+      {%- endif %}
+      
       - name: Build devportal template
         env:
           NAME: ""
           PATH_API: ""
-          TAGS: {% if values.specTags == "custom" %}"{% for tag in values.tags | string | list %}${{ tag }}{% endfor %}"{% else %}""{% endif %}
+          {%- if values.specTags == "custom" %}TAGS: "{% for tag in values.tags | string | list %}${{ tag }}{% endfor %}"{%- endif %}
         run: |
           mkdir -p api/
           NAME=`echo $GITHUB_REPOSITORY |awk -F / '{print $2 }'`
@@ -139,7 +141,7 @@ jobs:
           yq eval ".metadata.title=strenv(NAME)" -i "api/$NAME.yaml"
           yq eval ".metadata.publishedAt=\"$(date '+%Y-%m-%d %T')\"" -i "api/$NAME.yaml"
           yq eval ".metadata.description= \"$(cat ./openapi-swagger.yaml | yq e '.info.description')\"" -i "api/$NAME.yaml"
-          yq eval ".metadata.tags = (strenv($TAGS) | sub(\" +\", \"\") | split(\",\"))" -i "api/$NAME.yaml"
+          {%- if values.specTags == "custom" %} yq eval ".metadata.tags = (strenv($TAGS) | sub(\" +\", \"\") | split(\",\"))" -i "api/$NAME.yaml" {%- endif %}
           yq eval ".spec.type = \"openapi\"" -i "api/$NAME.yaml"
           yq eval ".spec.lifecycle = \"production\"" -i "api/$NAME.yaml"
           yq eval ".spec.owner = \"consumer\"" -i "api/$NAME.yaml"

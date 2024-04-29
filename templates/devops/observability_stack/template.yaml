@@ -1,0 +1,160 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: Observability
+  title: Observability Stack Template
+  description: Configures the installation of the observability stack containing Grafana, Prometheus, Jaeger and OpenTelemetry
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - platform-templates
+    - vkpr
+    - aws
+spec:
+  owner: veecode/platform
+  type: devops
+  parameters:
+       ### Project Configuration
+    - title: Project Configuration
+      required:
+        - componentId
+        - owner
+      properties:
+        componentId:
+          title: Project name
+          type: string
+          description: Name of the project
+          pattern: '^([a-z0-9]|[.]|[_]|[-])*$'
+          ui:autofocus: true
+          ui:field: EntityNamePicker
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+
+     ### Kong Configuration
+    - title: observability Configuration
+      required:
+        - domain
+        - ingress_class
+        - allocated_storage
+
+      properties:
+        domain:
+          title: Domain to use 
+          type: string
+          description: Specifies the Domain to use on manager an admin API's endpoint.
+        ingress_class:
+          title: Specifies the ingress class
+          type: string
+          description: Specifies the ingress class.
+          default: "kong"
+          enum:
+            - "kong"
+            - "ngnix"
+        allocated_storage:
+          title: Whats the allocated storage for Prometeus. Grafana and Alert Manager? (in GB)
+          type: integer
+          minimum: 5
+          maximum: 100
+          default: 5
+          multipleOf: 5
+          ui:widget: 'range' 
+          description: Set required disk size...
+        instrumentation_namespace:
+          title: Namespace Instrumentation
+          default: "vkpr"
+          type: string
+          description: Specifies the namespace Instrumentation
+     ### Location Configuration
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          description: Choose a location to create the Observability Stack Pipeline
+          ui:field: RepoUrlSelector
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+
+        visibility:
+          title: Repository visibility
+          type: string
+          enum:
+            - public
+            - private
+          enumNames:
+            - 'Public'
+            - 'Private'
+          default: private
+          
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton      
+        values:
+          domain: ${{ parameters.domain }}
+          ingress_class: ${{ parameters.ingress_class }}
+          allocated_storage: ${{ parameters.allocated_storage }}
+          specPublish: ${{ (parameters.specPublish | parseRepoUrl).owner }}/${{ (parameters.specPublish | parseRepoUrl).repo }}
+          specPublishRepo: ${{ (parameters.specPublish | parseRepoUrl).repo }}
+          specPublishBranch: ${{ parameters.specPublishBranch }}
+          specTags: ${{ parameters.specTags }}
+          owner: ${{ parameters.owner }}
+          repoUrl: ${{ (parameters.repoUrl | parseRepoUrl).owner }}/${{ (parameters.repoUrl | parseRepoUrl).repo }}
+          componentId: ${{ parameters.componentId }}
+          instrumentation_namespace: ${{ parameters.instrumentation_namespace }}
+
+    # check github
+    - name: Check Github Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "github.com" }} 
+      action: fs:delete
+      input:
+        files: 
+          - ./.gitlab-ci.yml 
+    # check gitlab
+    - name: Check Gitlab Provider
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host === "gitlab.com" }} 
+      action: fs:delete
+      input:
+        files:
+          - ./.github
+  
+    - id: publish
+      name: Publish in Github
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "github.com" }} 
+      action: publish:github
+      input:
+        allowedHosts:
+          - github.com
+        description: This is ${{ parameters.componentId }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }}
+      
+    - id: publish
+      name: Publish in Gitlab
+      if: ${{ (parameters.repoUrl | parseRepoUrl).host  === "gitlab.com" }}
+      action: publish:gitlab
+      input:
+        allowedHosts:
+          - gitlab.com
+        description: This is ${{ parameters.componentId }}
+        repoUrl: ${{ parameters.repoUrl }}
+        repoVisibility: ${{ parameters.visibility }} 
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml

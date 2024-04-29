@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{values.componentId | dump}}
+  {%- if values.description %}
+  description: ${{values.description | dump}}
+  {%- endif %}
+  annotations:
+    github.com/project-slug: ${{ values.repoUrl }}
+    backstage.io/techdocs-ref: dir:.
+    github.com/workflows: publish.yml
+    kong-manager/service-name: app.${{ values.componentId }}.${{ values.componentId }}-service-0.80
+    kong-manager/instance: /kong-manager/${{ values.cluster_name }}
+spec:
+  type: devops
+  lifecycle: experimental
+  owner: ${{values.owner | dump}}
+  providesApis:
+    - ${{ values.componentId }}

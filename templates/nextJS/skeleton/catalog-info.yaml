@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{values.componentId | dump}}
+  {%- if values.description %}
+  description: ${{values.description | dump}}
+  {%- endif %}
+  annotations:
+    github.com/project-slug: ${{values.repoUrl}}
+    backstage.io/techdocs-ref: dir:.
+    vault.io/secrets-path: devportal
+    grafana/dashboard-selector: "grafanacloud"
+    grafana/alert-label-selector: "alertname=teste-aviso"
+spec:
+  type: website
+  lifecycle: experimental
+  owner: ${{values.owner | dump}}

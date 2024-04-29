@@ -1,0 +1,164 @@
+name: spec-project
+on: 
+  workflow_dispatch:
+
+env:
+  PROJECT_NAME: "${{ values.componentId }}"
+  HOST_NAME: "${{ values.domain }}"
+{%- if values.cluster_type == "ec2" %}
+  PORT: 6550
+  USERNAME: "ec2-user"
+{%- endif %}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installing Inso
+        run: |
+          wget -p https://github.com/Kong/insomnia/releases/download/lib%408.6.1/inso-linux-8.6.1.tar.xz -O inso.tar.xz
+          tar -xvf inso.tar.xz
+          chmod +x inso
+          mv inso /usr/local/bin/inso
+          rm inso.tar.xz
+        
+      - name: Generating K8s Artefacts for external service
+        run: |
+          #Exporting from Openapi to Kong Ingress
+          inso generate config openapi-swagger.yaml --type kubernetes --output kong.yaml
+
+          #Count the number of ingresses
+          INGRESS_COUNT=$(yq e 'select(.kind == "Ingress") | length' kong.yaml | wc -l)
+
+          #Iterate through the ingresses and create a service.yaml file
+          for ((i=0; i<$INGRESS_COUNT; i++)); do
+              NEW_PROJECT_NAME=$PROJECT_NAME
+              if [ $i -gt 0 ]; then
+                  NEW_PROJECT_NAME=$PROJECT_NAME$i
+                  echo "---" >> service.yaml
+              fi
+              yq e "(select(di == $i) | select(.kind == \"Ingress\") | .spec.rules[0].http.paths[0].path) = \"/$NEW_PROJECT_NAME\" + .spec.rules[0].http.paths[0].path" -i kong.yaml
+              yq e "(select(di == $i) | select(.kind == \"Ingress\") | .metadata.name) |= \"$NEW_PROJECT_NAME\"" -i kong.yaml
+              yq e "(select(di == $i) | select(.kind == \"Ingress\") | .spec.rules[0].http.paths[0].backend.service.name) |= \"$NEW_PROJECT_NAME-service-$i\"" -i kong.yaml
+              SERVICE_NAME=$(yq e "(select(di == $i) | select(.kind == \"Ingress\") | .spec.rules[0].http.paths[0].backend.service.name)" kong.yaml)
+              HOST_EXTERNAL=$(yq e "(select(di == $i) | select(.kind == \"Ingress\") | .spec.rules[0].host)" kong.yaml)
+              kubectl create service externalname $SERVICE_NAME --external-name $HOST_EXTERNAL --dry-run=client -o=yaml | \
+              yq -e 'del(.spec.selector) | del(.metadata.creationTimestamp) | del(.status) | del(.metadata.labels)' >> service.yaml
+          done
+
+          #Modify the kong.yaml file adapting to Kong Ingress
+          yq e '(select(.kind == "Ingress") | .spec.ingressClassName) |= "kong"' -i kong.yaml
+          yq e '(select(.kind == "Ingress") | .metadata.annotations."konghq.com/strip-path") = "true"' -i kong.yaml
+          yq e "(select(.kind == \"Ingress\") | .metadata.annotations.\"konghq.com/plugins\") = \"$PROJECT_NAME-cors\"" -i kong.yaml
+          # yq e '(select(.kind == "Ingress") | .spec.rules[0].http.paths[0].pathType) = "Prefix"' -i kong.yaml
+          yq e "(select(.kind == \"Ingress\") | .spec.rules[0].host) |= \"$HOST_NAME\"" -i kong.yaml
+
+          echo "
+          apiVersion: configuration.konghq.com/v1
+          kind: KongPlugin
+          metadata:
+            name: $PROJECT_NAME-cors
+          plugin: cors
+          config:
+            origins:
+            - https://devportal-homolog.apr.vee.codes
+            - https://devportal.apr.vee.codes
+            credentials: false
+            max_age: 3600
+            preflight_continue: false
+          " >> kong-plugin.yaml
+
+          #Merging files
+          yq kong-plugin.yaml service.yaml kong.yaml > kubernetes.yaml
+
+          #Cleaning up
+          rm service.yaml kong.yaml kong-plugin.yaml
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{'${{'}} secrets.AWS_ACCESS_KEY ${{'}}'}}
+          aws-secret-access-key: ${{'${{'}} secrets.AWS_SECRET_KEY ${{'}}'}}
+          aws-region: ${{'${{'}} secrets.AWS_REGION ${{'}}'}}
+
+      {%- if values.cluster_type == "ec2" %}
+      - name: Write secret to file
+        run: |
+          echo "${{'${{'}} secrets.KEYPAIR ${{'}}'}}" > cert.pem
+          chmod 600 cert.pem
+
+      - name: Generate kube config with k3s  		
+        run: |
+          HOST=`aws ec2 describe-instances --filters 'Name=tag:Name,Values=${{ values.cluster_name }}'  --output text --query 'Reservations[*].Instances[*].PublicIpAddress'`
+          ssh -i ./cert.pem -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p .kube && k3d kubeconfig get k3s > ~/.kube/config"
+          echo "Host=$HOST" >> $GITHUB_ENV
+
+      - name: kubectl apply
+        run: |
+           mkdir -p ~/.kube
+           scp -i ./cert.pem -o StrictHostKeyChecking=no $USERNAME@${{'${{'}} env.Host ${{'}}'}}:~/.kube/config ~/.kube/config
+           CERTIFICATE=`cat  ~/.kube/config |grep certificate-authority-data `
+           sed -i "s|$CERTIFICATE|    insecure-skip-tls-verify: true|g" ~/.kube/config
+           sed -i "s|0.0.0.0|${{'${{'}} env.Host ${{'}}'}}|g" ~/.kube/config
+           kubectl create ns app --dry-run=client -o yaml | kubectl apply -f -
+           kubectl apply -f ./kubernetes.yaml -n app
+      {%- endif %}          
+ 
+      - name: Temporarily disable branch protection
+        uses: benjefferies/branch-protection-bot@master
+        if: always()
+        with:
+          access_token: ${{'${{'}} secrets.API_TOKEN_GITHUB ${{'}}'}}
+          branch: ${{'${{'}} github.event.repository.default_branch ${{'}}'}}
+
+      - name: Publish Catalogo Info
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        env:
+          API_TOKEN_GITHUB: ${{'${{'}} secrets.API_TOKEN_GITHUB ${{'}}'}}
+        with:
+          destination_branch: ${{'${{'}} github.event.repository.default_branch ${{'}}'}}
+          source_file: './kubernetes.yaml'
+          destination_repo: ${{'${{'}} github.repository ${{'}}'}}
+          destination_folder: '/'
+          commit_message: Update artefact in the same repo
+          user_name: ${{'${{'}} secrets.GH_USERNAME ${{'}}'}}
+          user_email: ${{'${{'}} secrets.GH_EMAIL ${{'}}'}}
+          git_server: github.com
+
+      - name: Build devportal template
+        env:
+          NAME: ""
+          PATH_API: ""
+          TAGS: "${{values.specTags}}"
+        run: |
+          mkdir -p api/
+          NAME=`echo $PROJECT_NAME`
+          echo $NAME
+          touch "api/$NAME.yaml"
+          yq ".servers = [{\"url\": \"https://$HOST_NAME/$PROJECT_NAME\"}]" -i ./openapi-swagger.yaml
+          sed --in-place "s|\"|'|g" ./openapi-swagger.yaml
+          yq eval ".apiVersion = \"backstage.io/v1alpha1\"" -i "api/$NAME.yaml"
+          yq eval ".kind = \"API\" " -i "api/$NAME.yaml"
+          yq eval ".metadata.name=strenv(NAME)" -i "api/$NAME.yaml"
+          yq eval ".metadata.title=strenv(NAME)" -i "api/$NAME.yaml"
+          yq eval ".metadata.publishedAt=\"$(date '+%Y-%m-%d %T')\"" -i "api/$NAME.yaml"
+          yq eval ".metadata.description= \"$(cat ./openapi-swagger.yaml | yq e '.info.description')\"" -i "api/$NAME.yaml"
+          yq eval ".metadata.tags = (strenv(TAGS) | sub(\" +\", \"\") | split(\",\"))" -i "api/$NAME.yaml"
+          yq eval ".spec.type = \"openapi\"" -i "api/$NAME.yaml"
+          yq eval ".spec.lifecycle = \"production\"" -i "api/$NAME.yaml"
+          yq eval ".spec.owner = \"consumer\"" -i "api/$NAME.yaml"
+          yq eval ".spec.definition = \"$(yq -I4 ./openapi-swagger.yaml)\"" --inplace "api/$NAME.yaml"
+
+      - name: Publish to spec house
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        env:
+          API_TOKEN_GITHUB: ${{'${{'}} secrets.API_TOKEN_GITHUB ${{'}}'}}
+        with:
+          destination_branch: ${{ values.specPublishBranch }}
+          source_file:  'api'
+          destination_repo: ${{ values.specPublish }}
+          destination_folder: '/'
+          user_name: ${{'${{'}} github.actor ${{'}}'}}
+          commit_message: 'Pipeline commit'

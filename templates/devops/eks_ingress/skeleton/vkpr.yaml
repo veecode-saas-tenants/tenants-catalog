@@ -1,0 +1,38 @@
+global:
+  domain: ${{ values.domain }} 
+  ingressClassName: nginx
+  secure: true
+  provider: aws
+cert-manager:
+  email: ${{ values.email }} 
+  issuer:
+    type: "${{ values.cert_manager }}"
+    solver: "DNS01"
+external-dns:
+  enabled: true
+nginx:
+  enabled: true
+{%- if values.observability_window %}
+prometheus-stack:
+  enabled: true
+  prometheus:
+    persistence:
+      enabled: true
+      size: 10Gi
+  helmArgs:
+    prometheus:
+      prometheusSpec:
+        enableRemoteWriteReceiver: true
+        remoteWrite:
+        - name: prometheus-central
+          sendExemplars: true
+          url: http://prometheus.apr.vee.codes/api/v1/write
+          writeRelabelConfigs:
+          - regex: (.+)
+            replacement: ${{ values.observability_label }}_$1
+            sourceLabels:
+            - __name__
+            targetLabel: __name__
+        externalLabels:
+          cluster: ${{ values.observability_label }}    
+{%- endif %}

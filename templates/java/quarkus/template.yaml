@@ -152,7 +152,7 @@ spec:
           description: Default branch of argo repository
         argoRepoUrl:
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
@@ -203,15 +203,15 @@ spec:
       required:
         - specPublish
         - specPublishBranch
-      description: Spec House Configuration
+      description: Define which repository your spec will be published in
       properties:
         specPublishBranch:
           title: Branch name
           type: string
-          description: Default branch of spechouse repository
+          description: the spec will be added to this branch
         specPublish:
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
@@ -247,9 +247,11 @@ spec:
                       type: array
                       ui:help: Write using camelCase or separate words using "-"
                       items:
-                        type: string         
-                            
-        plugins:
+                        type: string  
+
+    - title: Plugins
+      properties:
+        plugins: 
           title: Choose plugins for your Project
           type: object
           properties:
@@ -268,7 +270,8 @@ spec:
             plugin_argocd:
               title: ArgoCD
               type: boolean
-              default: true
+              default: true                    
+
           
           
 
@@ -279,7 +282,7 @@ spec:
         repoUrl:
           title: Repository visibility
           type: string
-          ui:field: RepoUrlPlatform
+          ui:field: RepoUrlSelector
           ui:options:
             allowedHosts:
               - github.com
@@ -328,7 +331,7 @@ spec:
           enable_kubernetes_plugin: ${{ parameters.plugins.kubernetes }}
           enable_vault_plugin: ${{ parameters.plugins.vault }}
           enable_grafana_plugin: ${{ parameters.plugins.grafana }}
-          enable_argocd_plugin: ${{ parameters.plugins.argocd }}
+          enable_argocd_plugin: ${{ parameters.plugins.plugin_argocd }}
           observability_window: ${{ parameters.observability_window.observability_window_mode }}
           observability_grafana: ${{ parameters.observability_window.observability_grafana }} 
           owner: ${{ parameters.owner }}

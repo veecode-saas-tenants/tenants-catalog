@@ -1,0 +1,8 @@
+site_name: Spec Project Template
+site_description: Spec Project Template.
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
