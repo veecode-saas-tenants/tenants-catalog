@@ -1,9 +1,0 @@
-site_name: AWS Lambda with Serverless Template
-site_description: Template for devops 
-
-nav:
-  - Introduction: index.md
-
-plugins:
-  - techdocs-core
-

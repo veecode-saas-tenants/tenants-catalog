@@ -20,4 +20,3 @@ spec:
     - ./java/quarkus/template.yaml
     - ./devops/spec_project/template.yaml
     - ./java/spring-boot-3/template.yaml
-    - ./devops/start-stop-ec2/template.yaml
