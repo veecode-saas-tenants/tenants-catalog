@@ -1,11 +1,11 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: "app-demo-spec-1"
+  name: "app-demo-spec-sample"
   description: "Artifacts generator via Spec."
   annotations:
-    github.com/project-slug: veecode-platform/app-demo-spec-1
-    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: veecode-platform/demo-catalog
+    backstage.io/techdocs-ref: dir:app-demo-spec-sample/.
     github.com/workflows: publish.yml
     
 spec:
@@ -13,5 +13,5 @@ spec:
   lifecycle: experimental
   owner: "group:default/admin"
   providesApis:
-    - app-demo-spec-1
+    - app-demo-spec-sample
   environment: 'environment:default/ec2_environment'

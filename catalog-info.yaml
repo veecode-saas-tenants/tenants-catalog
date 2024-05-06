@@ -9,6 +9,6 @@ spec:
     - ./templates/platform-templates.yaml
     - ./environment/ec2-environment/ec2-environment.yaml
     - ./cluster/*.yaml
-    - ./component/app-demo-spec-1/*.yaml
+    - ./component/app-demo-spec-sample/*.yaml
     - ./component/app-exemple-platform-k8s/*.yaml
     - ./team/*.yaml

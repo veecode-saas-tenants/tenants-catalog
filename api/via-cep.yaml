@@ -1,8 +1,8 @@
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: app-demo-spec-1
-  title: app-demo-spec-1
+  name: app-demo-spec-sample
+  title: app-demo-spec-sample
   description: Consulte CEPs de todo o Brasil.
   publishedAt: 2022-11-25 13:45:41
   tags:

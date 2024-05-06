@@ -1,6 +1,6 @@
-# app-demo-spec-1
+# app-demo-spec-sample
 
-app-demo-spec-1
+app-demo-spec-sample
 
 ## Getting started
 
