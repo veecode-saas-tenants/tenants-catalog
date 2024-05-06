@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Cluster
 metadata:
   name: "devportal-kubernetes"
-  description: "cluster-base-eks"
+  description: "cluster-base"
   annotations:
     github.com/project-slug: veecode-platform/demo-catalog
     backstage.io/techdocs-ref: dir:.

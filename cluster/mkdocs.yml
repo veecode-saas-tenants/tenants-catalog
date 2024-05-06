@@ -1,0 +1,8 @@
+site_name: "devportal-kubernetes"
+site_description: "devportal-kubernetes"
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
