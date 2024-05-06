@@ -7,7 +7,7 @@ spec:
   targets:
     - ./api/*.yaml
     - ./templates/platform-templates.yaml
-    - ./environment/*.yaml
+    - ./environment/ec2-environment/ec2-environment.yaml
     - ./cluster/*.yaml
     - ./component/app-demo-spec-1/*.yaml
     - ./component/app-exemple-platform-k8s/*.yaml

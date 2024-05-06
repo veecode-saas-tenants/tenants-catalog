@@ -1,8 +1,0 @@
-site_name: "app-exemple-platform-k8s"
-site_description: "app-exemple-platform-k8s"
-
-nav:
-  - Introduction: index.md
-
-plugins:
-  - techdocs-core

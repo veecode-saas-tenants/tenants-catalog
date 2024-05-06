@@ -1,0 +1,8 @@
+site_name: "ec2-environment"
+site_description: "ec2-environment"
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
