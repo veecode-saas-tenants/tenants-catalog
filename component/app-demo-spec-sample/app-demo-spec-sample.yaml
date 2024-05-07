@@ -4,7 +4,7 @@ metadata:
   name: "app-demo-spec-sample"
   description: "Artifacts generator via Spec."
   annotations:
-    github.com/project-slug: veecode-platform/demo-catalog
+    github.com/project-slug: veecode-platform/app-demo-spec-sample
     backstage.io/techdocs-ref: dir:.
     github.com/workflows: publish.yml
     
