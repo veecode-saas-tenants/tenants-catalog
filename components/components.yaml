@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: platform-devportal-components
+  description: Importing components
+spec:
+  targets:
+    - ./app-demo-spec-sample/*.yaml
+    - ./app-example-platform-k8s/*.yaml

@@ -1,6 +1,6 @@
-# app-exemple-platform-k8s
+# app-example-platform-k8s
 
-app-exemple-platform-k8s
+app-example-platform-k8s
 
 ## Getting started
 

@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: app-exemple-platform-k8s
+  name: app-example-platform-k8s
   annotations:
     backstage.io/techdocs-ref: dir:.
     # backstage.io/kubernetes-id: "app-exemple-platform-k8s"

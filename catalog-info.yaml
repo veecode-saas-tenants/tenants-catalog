@@ -5,10 +5,9 @@ metadata:
   description: Importing apis
 spec:
   targets:
-    - ./api/*.yaml
-    - ./templates/platform-templates.yaml
-    - ./environment/ec2-environment/ec2-environment.yaml
-    - ./cluster/*.yaml
-    - ./component/app-demo-spec-sample/*.yaml
-    - ./component/app-exemple-platform-k8s/*.yaml
+    - ./apis/*.yaml
+    - ./templates/templates.yaml
+    - ./environments/environments.yaml
+    - ./clusters/clusters.yaml
+    - ./components/components.yaml
     - ./team/*.yaml

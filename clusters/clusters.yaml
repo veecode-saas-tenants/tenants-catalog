@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: platform-devportal-clusters
+  description: Importing clusters
+spec:
+  targets:
+    - ./devportal-kubernetes/*.yaml
