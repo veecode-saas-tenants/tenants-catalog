@@ -7,7 +7,7 @@ metadata:
     github.com/project-slug: veecode-platform/demo-catalog
     backstage.io/techdocs-ref: dir:.
     veecode/cluster-name: "devportal-kubernetes"  #annotations for cluster plugin
-    cluster/demo: true
+    veecode/cluster-mode: "demo"
 spec:
   type: devops
   lifecycle: experimental
