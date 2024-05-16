@@ -4,7 +4,7 @@ metadata:
   name: "devportal-kubernetes"
   description: "cluster-kubernets"
   annotations:
-    github.com/project-slug: veecode-platform/demo-catalog
+    #github.com/project-slug: veecode-platform/demo-catalog
     backstage.io/techdocs-ref: dir:.
     veecode/cluster-name: "devportal-kubernetes"  #annotations for cluster plugin
     veecode/cluster-mode: "demo"
