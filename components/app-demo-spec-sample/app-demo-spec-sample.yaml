@@ -7,6 +7,8 @@ metadata:
     github.com/project-slug: veecode-platform/app-demo-spec-sample
     backstage.io/techdocs-ref: dir:.
     github.com/workflows: publish.yml
+    kong-manager/service-name: nameservice_test_A01
+    kong-manager/instance: local
     
 spec:
   type: devops
