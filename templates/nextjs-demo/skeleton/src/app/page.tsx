@@ -29,7 +29,7 @@ export default function Home() {
             rel="noopener noreferrer"
           >
             <Image
-              src={withBasePath("/assets/veecode.png")}
+              src={withBasePath("/assets/veecode.svg")}
               alt="Vercel logomark"
               width={20}
               height={20}
