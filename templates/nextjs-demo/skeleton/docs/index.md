@@ -1,4 +1,4 @@
-This is a **Next.js** project created from a template using [**VeeCode Devportal Demo**](https://)
+This is a **Next.js** project created from a template using [**VeeCode Devportal Demo**](https://devportal-demo.apr.vee.codes/)
 
 #### Getting Started
 
