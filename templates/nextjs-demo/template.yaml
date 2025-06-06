@@ -39,8 +39,7 @@ spec:
           description: |
             The Owner should be your GitHub username. The Repository name should be a name that is not one that exists already in your GitHub account.
           type: string
-          ui:field: RepoUrlSelector
-          reuseName: componentName
+          ui:field: RepoUrlPicker
           ui:options:
             requestUserCredentials:
               secretsKey: USER_OAUTH_TOKEN
