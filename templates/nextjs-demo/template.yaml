@@ -4,6 +4,13 @@ metadata:
   name: next-demo-template
   title: NextJs Demo Template
   description: Create a static site using NextJs and publish it with GitHub Pages
+  annotations:
+  backstage.io/techdocs-ref: dir:.
+  tags:
+    - veeCode-platform-demo
+    - nextJs
+    - static
+    - github
 spec:
   owner: veecode-platform/demo
   type: website
@@ -32,7 +39,8 @@ spec:
           description: |
             The Owner should be your GitHub username. The Repository name should be a name that is not one that exists already in your GitHub account.
           type: string
-          ui:field: RepoUrlPicker
+          ui:field: RepoUrlSelector
+          reuseName: componentName
           ui:options:
             requestUserCredentials:
               secretsKey: USER_OAUTH_TOKEN
