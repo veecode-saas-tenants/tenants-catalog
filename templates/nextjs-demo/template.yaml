@@ -46,8 +46,6 @@ spec:
               additionalScopes:
                 github:
                   - workflow
-                  - repo
-                  - public_repo
             allowedHosts:
               - github.com
 
