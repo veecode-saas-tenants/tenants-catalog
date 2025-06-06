@@ -1,9 +1,0 @@
-site_name: ExpressJS Template
-site_description: Template for devops 
-
-nav:
-  - Introduction: index.md
-
-plugins:
-  - techdocs-core
-

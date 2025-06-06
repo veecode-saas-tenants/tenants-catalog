@@ -1,9 +1,0 @@
-site_name: Insomnia OpenApi Template
-site_description: Create an OpenApi template using Insomnia
-
-nav:
-  - Introduction: index.md
-
-plugins:
-  - techdocs-core
-

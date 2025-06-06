@@ -1,0 +1,8 @@
+site_name: "NextJs Template - Build a static site demo with GH Page"
+site_description: "Create a demo of a fully static NextJs project"
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core

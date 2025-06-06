@@ -5,18 +5,4 @@ metadata:
   description: A collection of all Platform templates
 spec:
   targets:
-    - ./devops/openapi-project/template.yaml
-    - ./java/spring-boot-3/template.yaml
-    - ./java/quarkus/template.yaml
-    - ./node/okteto-express-demo/template.yaml
-    - ./devops/cluster_ec2/template.yaml
-    - ./node/express/template.yaml
-    - ./devops/eks_ingress/template.yaml
-    - ./devops/insomnia-project/template.yaml
-    - ./devops/kong/template.yaml
-    - ./nextJS/template.yaml
-    - ./devops/observability_stack/template.yaml
-    - ./devops/openapi-project/template.yaml
-    - ./java/quarkus/template.yaml
-    - ./devops/spec_project/template.yaml
-    - ./java/spring-boot-3/template.yaml
+    - ./nextjs-demo/template.yaml
