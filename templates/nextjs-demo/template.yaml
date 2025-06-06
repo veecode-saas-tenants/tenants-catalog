@@ -46,8 +46,20 @@ spec:
               additionalScopes:
                 github:
                   - workflow
+                  - repo
+                  - public_repo
             allowedHosts:
               - github.com
+        visibility:
+          title: Repository visibility
+          type: string
+          enum:
+            - public
+            - private
+          enumNames:
+            - "Public"
+            - "Private"
+          default: public
 
   steps:
     - id: list-inputs
@@ -80,9 +92,9 @@ spec:
         allowedHosts: ["github.com"]
         repoUrl: ${{ parameters.repoUrl }}
         token: ${{ secrets.USER_OAUTH_TOKEN or false }}
-        repoVisibility: public
         defaultBranch: main
         description: Repository Created by NextJs Demo Template
+        repoVisibility: ${{ parameters.visibility }}
 
     - id: enable-pages
       name: Enable Pages
