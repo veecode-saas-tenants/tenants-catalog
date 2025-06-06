@@ -86,6 +86,25 @@ spec:
         defaultBranch: main
         description: Repository Created by NextJs Demo Template
 
+    - id: enable-pages
+      name: Enable Pages
+      action: github:pages:enable
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        buildType: "workflow"
+        sourceBranch: main
+        sourcePath: "/"
+        token: ${{ secrets.USER_OAUTH_TOKEN or false }}
+
+    - id: dispatch-workflow
+      name: Dispatch Github Action Workflow
+      action: github:actions:dispatch
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        workflowId: deploy.yml
+        branchOrTagName: main
+        token: ${{ secrets.USER_OAUTH_TOKEN or false }}
+
   output:
     links:
       - url: ${{steps.publish.output.remoteUrl}}
