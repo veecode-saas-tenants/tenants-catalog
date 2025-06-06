@@ -7,8 +7,8 @@ metadata:
   annotations:
   backstage.io/techdocs-ref: dir:.
   tags:
-    - veeCode-platform-demo
-    - nextJs
+    - veecode-platform-demo
+    - nextjs
     - static
     - github
 spec:
