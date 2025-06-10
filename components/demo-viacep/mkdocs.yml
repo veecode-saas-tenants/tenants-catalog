@@ -1,0 +1,8 @@
+site_name: viacep
+site_description: "Artifacts generator via Spec."
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core
