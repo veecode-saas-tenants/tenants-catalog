@@ -6,3 +6,4 @@ metadata:
 spec:
   targets:
     - ./devportal-kubernetes/*.yaml
+    - ./ec2-infracost-demo/*.yaml
