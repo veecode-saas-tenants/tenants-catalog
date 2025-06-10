@@ -3,16 +3,16 @@ kind: Environment
 metadata:
   name: "ec2_environment"
   environment:
-    domain: ec2.enviroment.platform.vee.codes	
-    hostedZoneId: Z0588229U57FY5ZB0SPHUM
-    vpc_id: vpc-03390e24748983217
-    vpc_name: ec2_demo
-    certManagerEmail: vkpr@vkpr.net
+    domain: dummy.vee.codes
+    hostedZoneId: Z000000000000000
+    vpc_id: vpc-0000000000000
+    vpc_name: dummy_demo
+    certManagerEmail: dummy@veecode.com
     certManagerIssuerType: staging
   annotations:
     github.com/project-slug: veecode-platform/demo-catalog
     backstage.io/techdocs-ref: dir:.
 spec:
-  type: service
+  type: env
   lifecycle: development
   owner: "group:default/admin"

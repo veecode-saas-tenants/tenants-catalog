@@ -1,0 +1,8 @@
+site_name: "demo-trivy"
+site_description: "demo-trivy"
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core

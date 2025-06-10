@@ -1,8 +1,0 @@
-site_name: "app-demo-spec-sample"
-site_description: "app-demo-spec-sample"
-
-nav:
-  - Introduction: index.md
-
-plugins:
-  - techdocs-core

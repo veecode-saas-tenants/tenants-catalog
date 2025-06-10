@@ -1,6 +1,4 @@
-# app-demo-spec-sample
-
-app-demo-spec-sample
+# Dummy-environment
 
 ## Getting started
 

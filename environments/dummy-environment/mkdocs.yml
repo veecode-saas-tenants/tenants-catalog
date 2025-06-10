@@ -1,0 +1,8 @@
+site_name: "dummy-environment"
+site_description: "dummy-environment"
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core

@@ -1,6 +1,4 @@
-# ec2-environment
-
-ec2-environment
+# Dummy-environment
 
 ## Getting started
 
@@ -22,4 +20,3 @@ pages, or include links to other sites.
 
 Note that MkDocs uses `mkdocs.yml`, not `mkdocs.yaml`, although both appear to work.
 See also <https://www.mkdocs.org/user-guide/configuration/>.
-
