@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: via-cep
+  name: viacep
   description: Consulte CEPs de todo o Brasil.
   publishedAt: 2022-11-25
   tags:
