@@ -5,5 +5,5 @@ metadata:
   description: Importing components
 spec:
   targets:
-    - ./demo-trivy/catalog-info.yaml
-    - ./demo-viacep/catalog-info.yaml
+    - https://github.com/veecode-homolog/viacep/blob/main/catalog-info.yaml
+    - https://github.com/veecode-homolog/demo-trivy/blob/main/catalog-info.yaml
