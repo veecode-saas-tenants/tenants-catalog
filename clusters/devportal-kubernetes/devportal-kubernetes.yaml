@@ -14,7 +14,7 @@ metadata:
     kubernetes.io/api-server: https://dd69495e-d62a-426d-aa00-b4d71e43581b.k8s.ondigitalocean.com
     kubernetes.io/skip-tls-verify: "true"
     kubernetes.io/skip-metrics-lookup: "false"
-    infracost/project: devportal-kubernetes-infracost
+    # infracost/project: devportal-kubernetes-infracost
     cluster/instructions: |
       doctl auth init --access-token $YOUR_DIGITALOCEAN_ACCESS_TOKEN
       doctl kubernetes cluster kubeconfig save
