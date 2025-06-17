@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Location
 metadata:
   name: platform-devportal-catalog-info
-  description: Importing apis
+  description: Tenants main catalog
 spec:
   targets:
     - ./apis/*.yaml
