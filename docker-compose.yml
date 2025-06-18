@@ -1,0 +1,16 @@
+#
+# WORKFLOW PARA EDICAO E TESTES DE SKAFFOLDING
+#
+services:
+  backstage:
+    #image: andrevtg/devportal-bundle:magalu
+    image: veecode/devportal-bundle:0.23.2
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./.compose/app-config.minimal.yaml:/app/app-config.minimal.yaml
+      - ./templates/tenant-ec2:/opt/template
+      #- /tmp:/tmp
+    command: ["node", "packages/backend", "--config", "app-config.minimal.yaml"]

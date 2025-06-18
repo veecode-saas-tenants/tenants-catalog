@@ -5,4 +5,4 @@ metadata:
   description: Importing environments
 spec:
   targets:
-    - ./dummy-environment/*.yaml
+    - ./tenants-main/*.yaml

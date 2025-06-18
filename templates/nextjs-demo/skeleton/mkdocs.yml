@@ -1,8 +1,0 @@
-site_name: "${{ values.componentName }}"
-site_description: "An example of a static site using NextJs and GHPages"
-
-nav:
-  - Introduction: index.md
-
-plugins:
-  - techdocs-core

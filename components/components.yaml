@@ -5,5 +5,4 @@ metadata:
   description: Importing components
 spec:
   targets:
-    - https://github.com/veecode-homolog/viacep/blob/main/catalog-info.yaml
-    - https://github.com/veecode-homolog/demo-trivy/blob/main/catalog-info.yaml
+    - https://github.com/veecode-saas-platform/saas-prod-cplane/blob/main/catalog-info.yaml

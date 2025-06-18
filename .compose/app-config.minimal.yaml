@@ -1,0 +1,125 @@
+app:
+  title: Devportal
+  baseUrl: http://localhost:3000
+permission:
+  enabled: false
+integrations:
+  github:
+    - host: github.com
+      apiBaseUrl: https://api.github.com/
+      token: xxxxxx
+scaffolder:
+  defaultAuthor:
+    name: M.C. Hammer # Defaults to `Scaffolder`
+    email: hammer@donthurtem.com # Defaults to `scaffolder@backstage.io`
+  defaultCommitMessage: "U can't touch this" # Defaults to 'Initial commit'
+auth:
+  environment: development
+  providers:
+    guest:
+      dangerouslyDisableDefaultAuthPolicy: true
+backend:
+  baseUrl: http://localhost:3000
+  listen:
+    port: 3000
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+  cache:
+    store: memory
+  auth:
+    externalAccess:
+      - type: static
+        options:
+          token: MY-OWN-TOKEN
+          subject: admin-curl-access
+organization:
+  name: Devportal
+techdocs:
+  builder: "local" # Alternatives - 'external'
+  generator:
+    runIn: "local"
+  publisher:
+    type: "local" # Alternatives - 'googleGcs' or 'awsS3' or 'azureBlobStorage' or 'openStackSwift'. Read documentation for using alternatives.
+
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template]
+  locations:
+    # Local example data, file locations are relative to the backend process, typically `packages/backend`
+    - type: file
+      target: /opt/template/template.yaml
+
+platform:
+  behaviour: 
+    mode: demo #product, demo, workshop, anything else  - get config directly from here
+    home: true
+    catalog: true
+    apis: false
+    resources: false
+    create: true
+    docs: false
+    groups: false
+    apiManagement: false
+  guest:
+    enabled: true
+    demo: true
+  defaultGroup:
+    enabled: true
+  group:
+    admin: admin
+    user: user
+  signInProviders:
+   - github
+  apiManagement:
+    enabled: false
+    readOnlyMode: false #boolean
+
+enabledPlugins:
+  gitlabPlugin: false
+  keycloak: false
+  infracost: false
+  azureDevops: false
+  grafana: false
+  kubernetes: false
+  vault: false
+  argocd: false
+  rbac: false
+  kong: false
+  vee: false
+  sonarqube: false
+  gitlab: false
+  
+
+vault:
+  enabled: false
+  domain: null
+grafana:
+  enabled: false
+  domain: localhost
+argocd:
+  enabled: false
+keycloak:
+  enabled: false
+azureDevops:
+  enabled: false
+infracost:
+  enabled: false
+
+search:
+  pg:
+    highlightOptions:
+      useHighlight: true # Used to enable to disable the highlight feature. The default value is true
+      maxWord: 35 # Used to set the longest headlines to output. The default value is 35.
+      minWord: 15 # Used to set the shortest headlines to output. The default value is 15.
+      shortWord: 3 # Words of this length or less will be dropped at the start and end of a headline, unless they are query terms. The default value of three (3) eliminates common English articles.
+      highlightAll: false # If true the whole document will be used as the headline, ignoring the preceding three parameters. The default is false.
+      maxFragments: 0 # Maximum number of text fragments to display. The default value of zero selects a non-fragment-based headline generation method. A value greater than zero selects fragment-based headline generation (see the linked documentation above for more details).
+      fragmentDelimiter: ' ... ' 
+    schedule:        
+      frequency: 
+        minutes: 3
+      timeout: 
+        minutes: 5

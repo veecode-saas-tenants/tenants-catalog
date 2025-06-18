@@ -1,8 +1,8 @@
 apiVersion: backstage.io/v1alpha1
 kind: Location
 metadata:
-  name: devportal-public-templates
-  description: A collection of all Platform templates
+  name: devportal-saas-templates
+  description: A collection of all VeeCode SaaS Platform templates
 spec:
   targets:
-    - ./nextjs-demo/template.yaml
+    - ./tenant-ec2/template.yaml

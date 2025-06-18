@@ -5,4 +5,4 @@ metadata:
   description: Importing clusters
 spec:
   targets:
-    - ./devportal-kubernetes/*.yaml
+    - ./control-plane/*.yaml

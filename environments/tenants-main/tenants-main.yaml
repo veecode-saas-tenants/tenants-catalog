@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Environment
+metadata:
+  name: "tenants_main_environment"
+  environment:
+    domain: apps.vee.codes
+    hostedZoneId: Z00294502RM30LRSDS34M
+    vpc_id: vpc-0790144ee918a115b
+    vpc_name: veecode-saas-vpc
+  annotations:
+    github.com/project-slug: veecode-saas-platform/tenants-catalog
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: env
+  lifecycle: development
+  owner: "group:default/admin"
