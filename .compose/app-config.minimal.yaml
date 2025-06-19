@@ -16,8 +16,7 @@ scaffolder:
 auth:
   environment: development
   providers:
-    guest:
-      dangerouslyDisableDefaultAuthPolicy: true
+    guest: {}
 backend:
   baseUrl: http://localhost:3000
   listen:
@@ -27,12 +26,15 @@ backend:
     connection: ':memory:'
   cache:
     store: memory
+  anonymous:
+    enabled: true
   auth:
-    externalAccess:
-      - type: static
-        options:
-          token: MY-OWN-TOKEN
-          subject: admin-curl-access
+    allowGuest: true
+    # externalAccess:
+    #   - type: static
+    #     options:
+    #       token: MY-OWN-TOKEN
+    #       subject: admin-curl-access
 organization:
   name: Devportal
 techdocs:
@@ -50,7 +52,7 @@ catalog:
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file
-      target: /opt/template/template.yaml
+      target: /opt/templates/templates.yaml
 
 platform:
   behaviour: 
@@ -123,3 +125,4 @@ search:
         minutes: 3
       timeout: 
         minutes: 5
+    

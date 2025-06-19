@@ -38,3 +38,9 @@ terraform.rc
 
 .DS_Store
 .vscode/
+
+# tests
+*.tf0
+tests/*/output/
+
+

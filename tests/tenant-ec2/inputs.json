@@ -1,0 +1,8 @@
+{
+    "values": {
+        "componentName": "minha-vm",
+        "instanceSize": "t4g.small",
+        "useSpotInstance": false,
+        "environment": "tenant-env"
+    }
+}
