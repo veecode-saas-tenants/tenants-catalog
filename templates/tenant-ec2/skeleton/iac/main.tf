@@ -19,6 +19,12 @@ data "aws_subnet" "selected" {
   }
 }
 
+# Data source to fetch each public key from the key names
+data "aws_key_pair" "keys" {
+  for_each = var.key_names
+  key_name = each.value
+}
+
 # Import the latest AMI with name starting with "veecode-base-*"
 data "aws_ami" "veecode_saas" {
   most_recent = true

@@ -22,25 +22,22 @@ Nunjucks CLI can be installed via npm:
 npm install -g nunjucks-cli
 ```
 
+To run the tests:
 
 ```bash
-for d in ./tests/*/ ; do
-  template_name=$(basename "$d")
-  input_file="$d/inputs.json"
-  template_dir="./templates/$template_name/skeleton/iac/"
-  output_dir="${d}/output/"
-  if [ -f "$input_file" ] && [ -d "$template_dir" ]; then
-    echo "Pre-processing $template_name"
-    find "$template_dir" -type f -name "*.tf" | while read file; do
-        target="./tests/$template_name/output/${file#./templates/tenant-ec2/skeleton/iac/}"
-        # troca "${{" por "{{"
-        sed 's/\${{/{{/g' "$file" > "${target}0"
-    done
-    # processa os templates com os inputs
-    echo "Processing $template_name"
-    nunjucks "*.tf0" "$input_file" --path "$output_dir" -o "$output_dir" -e tf
-    rm "${output_dir}"*.tf0
-  fi
-done
+./run_tests.sh
 ```
+
+To clean the output folders:
+
+```bash
+./run_tests.sh --clean
+```
+
+## What to do with test output
+
+Things we can do to improve tests:
+
+- Run "terraform validate" on the output folders to check if the templates are valid
+- Run "terraform plan" on the output folders to check if the templates are valid (must pick solution to backend and AWS auth)
 
