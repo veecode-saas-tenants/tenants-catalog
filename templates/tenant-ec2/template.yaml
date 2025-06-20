@@ -58,11 +58,9 @@ spec:
           description: Select the environment for your tenant
           type: string
           enum:
-            - env1
-            - env2
+            - tenants_main_environment
           enumNames:
-            - "Environment 1"
-            - "Environment 2"
+            - "tenants_main_environment"
           default: env1
           
     - title: Choose a location
@@ -77,17 +75,12 @@ spec:
           description: |
             The Owner should be your GitHub username. The Repository name should be a name that is not one that exists already in your GitHub account.
           type: string
-          ui:field: RepoUrlPicker
+          ui:field: RepoUrlSelector
           ui:options:
-            requestUserCredentials:
-              secretsKey: USER_OAUTH_TOKEN
-              additionalScopes:
-                github:
-                  - workflow
-                  - repo
-                  - private_repo
             allowedHosts:
               - github.com
+            allowedOwners:
+              - veecode-saas-tenants
         visibility:
           title: Repository visibility
           type: string
