@@ -125,19 +125,18 @@ spec:
       input:
         allowedHosts: ["github.com"]
         repoUrl: ${{ parameters.repoUrl }}
-        token: ${{ secrets.USER_OAUTH_TOKEN or false }}
         defaultBranch: main
-        description: Repository Created by NextJs Demo Template
+        description: Repository Created Tenant EC2 Template
         repoVisibility: ${{ parameters.visibility }}
 
-    - id: dispatch-workflow
-      name: Dispatch Github Action Workflow
-      action: github:actions:dispatch
-      input:
-        repoUrl: ${{ parameters.repoUrl }}
-        workflowId: deploy.yml
-        branchOrTagName: main
-        token: ${{ secrets.USER_OAUTH_TOKEN or false }}
+    # - id: dispatch-workflow
+    #   name: Dispatch Github Action Workflow
+    #   action: github:actions:dispatch
+    #   input:
+    #     repoUrl: ${{ parameters.repoUrl }}
+    #     workflowId: deploy.yml
+    #     branchOrTagName: main
+    #     token: ${{ secrets.USER_OAUTH_TOKEN or false }}
 
   output:
     links:
