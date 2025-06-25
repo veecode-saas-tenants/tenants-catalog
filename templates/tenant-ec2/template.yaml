@@ -110,7 +110,6 @@ spec:
       action: fetch:template
       input:
         url: ./skeleton
-        token: ${{ secrets.USER_OAUTH_TOKEN or false }}
         values:
           componentName: ${{parameters.componentName}}
           componentURL: https://${{parameters.componentName}}.apps.vee.codes
