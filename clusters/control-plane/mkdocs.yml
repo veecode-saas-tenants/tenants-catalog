@@ -1,0 +1,8 @@
+site_name: "cplane-cluster"
+site_description: "Control Plane Cluster"
+
+nav:
+  - Introduction: index.md
+
+plugins:
+  - techdocs-core

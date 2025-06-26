@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Cluster
+metadata:
+  name: "control-plane-cluster"
+  description: "Control Plane DevPortal Cluster (EC2/k3s)"
+  annotations:
+    veecode/cluster-name: "control-plane-cluster"  #annotations for cluster plugin
+    backstage.io/kubernetes-id: control-plane-cluster
+    kubernetes.io/secret-name: control-plane-cluster-secret
+    kubernetes.io/secret-namespace: default
+    kubernetes.io/auth-provider: serviceAccount
+    kubernetes.io/api-server: https://kubernetes.default.svc
+    kubernetes.io/skip-tls-verify: "true"
+    kubernetes.io/skip-metrics-lookup: "false"
+spec:
+  type: devops
+  lifecycle: experimental
+  owner: "group:default/admin"

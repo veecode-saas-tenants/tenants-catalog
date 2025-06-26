@@ -2,7 +2,7 @@
 
 ## Description
 
-The environment "tenants_main_environment" represents the main environment for VeeCode SaaStenant instances.
+The environment "tenants_main_environment" represents the main environment for VeeCode SaaS tenant instances.
 
 - Domain: apps.vee.codes
 - AWS Account: 9********513
