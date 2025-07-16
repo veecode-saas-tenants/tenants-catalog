@@ -90,6 +90,24 @@ spec:
             - "Private"
           default: private
 
+    - title: Kong Configuration
+      description: Configure the Kong Admin API credentials.
+      required:
+        - kongAdminUrl
+        - kongAdminToken
+      properties:
+        kongAdminUrl:
+          title: Kong Admin API URL
+          description: Endpoint for Kong Admin API
+          type: string
+          default: "https://manager.saas.vee.codes/"
+        kongAdminToken:
+          title: Kong Admin Token
+          description: Authentication token for Kong Admin API
+          type: string
+          ui:widget: password
+          default: "vkpr123"
+
   steps:
     - id: list-inputs
       name: List Inputs
@@ -118,6 +136,8 @@ spec:
           useSpotInstance: ${{parameters.useSpotInstance}}
           owner: ${{ parameters.repoUrl | parseRepoUrl | pick('owner') }}
           repo: ${{ parameters.repoUrl | parseRepoUrl | pick('repo') }}
+          kongAdminUrl: ${{ parameters.kongAdminUrl }}
+          kongAdminToken: ${{ parameters.kongAdminToken }}
 
     - id: publish
       name: Publish
