@@ -1,5 +1,5 @@
 apiVersion: backstage.io/v1alpha1
-kind: Component
+kind: Tenant
 metadata:
   name: ${{ values.name }}
   description: ${{ values.description }} DevPortal Tenant.
