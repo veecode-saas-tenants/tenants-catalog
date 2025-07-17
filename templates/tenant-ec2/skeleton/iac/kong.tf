@@ -17,9 +17,9 @@ variable "kong_admin_token" {
 }
 
 provider "kong" {
-  admin_url       = var.kong_admin_url
-  admin_token     = var.kong_admin_token
-  tls_skip_verify = true
+  server_url       = var.kong_admin_url
+  admin_token      = var.kong_admin_token
+  tls_skip_verify  = true
 }
 
 resource "kong_service" "tenant_service" {
