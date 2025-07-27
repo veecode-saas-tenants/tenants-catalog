@@ -12,7 +12,7 @@ metadata:
     - vm
     - aws
 spec:
-  owner: veecode-saas/control-plane
+  owner: default/admin
   type: service
 
   parameters:
